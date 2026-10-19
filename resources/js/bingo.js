@@ -6,19 +6,22 @@ export function createBoard(container, state) {
     if (state.game.use_letters) {
         const perLetter = Math.ceil(state.game.number_max / 5);
         const wrap = document.createElement('div');
-        wrap.className = 'space-y-2';
+        wrap.className = 'space-y-1.5';
 
-        state.letters.forEach((letter) => {
+        state.letters.forEach((letter, index) => {
+            const start = index * perLetter + 1;
+            const end = Math.min(state.game.number_max, start + perLetter - 1);
+            const count = end - start + 1;
+
             const row = document.createElement('div');
-            row.className = 'flex flex-wrap items-center gap-1';
+            row.className = 'grid gap-1';
+            row.style.gridTemplateColumns = `2.5rem repeat(${count}, minmax(0, 1fr))`;
 
             const label = document.createElement('div');
-            label.className = 'w-10 shrink-0 text-center text-base font-black tracking-widest text-amber-300 bg-slate-800 rounded-md py-0.5 mr-0.5';
+            label.className = 'flex items-center justify-center rounded-md bg-slate-800 py-0.5 text-base font-black tracking-widest text-amber-300';
             label.textContent = letter;
             row.appendChild(label);
 
-            const start = state.letters.indexOf(letter) * perLetter + 1;
-            const end = Math.min(state.game.number_max, start + perLetter - 1);
             for (let n = start; n <= end; n++) {
                 row.appendChild(boardCell(n));
             }
@@ -43,8 +46,8 @@ export function createBoard(container, state) {
 function boardCell(n) {
     const cell = document.createElement('div');
     cell.dataset.number = n;
-    cell.innerHTML = `<span class="text-xs font-bold">${String(n).padStart(2, '0')}</span>`;
-    cell.className = 'group relative flex aspect-square h-10 w-10 items-center justify-center rounded-lg bg-slate-200/70 text-center font-bold text-slate-800 transition hover:bg-slate-300 active:scale-95';
+    cell.innerHTML = `<span class="text-xs font-bold sm:text-sm">${String(n).padStart(2, '0')}</span>`;
+    cell.className = 'group relative flex aspect-square w-full items-center justify-center rounded-lg bg-slate-200/70 text-center font-bold text-slate-800 transition hover:bg-slate-300 active:scale-95';
     return cell;
 }
 

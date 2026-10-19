@@ -64,9 +64,9 @@
                 <label class="mt-6 block text-sm font-semibold text-slate-700">
                     Painel de números — clique na pedra sorteada
                 </label>
-                <div id="keypad" class="mt-4 -mx-4 w-full"></div>
+                <div id="keypad" class="mt-4 w-full"></div>
 
-                <div class="px-4 pb-4">
+                <div class="mt-4">
                     <button id="undo-btn" type="button"
                         class="w-full rounded-xl border-2 border-red-200 bg-red-50 py-3 text-sm font-bold text-red-700 transition hover:bg-red-100">
                         ↩ Desfazer último registro
