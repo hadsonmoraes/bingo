@@ -40,6 +40,10 @@
         table.head td { padding: 2mm 3mm; vertical-align: middle; }
         td.head-brand { text-align: left; }
         td.head-meta { text-align: right; }
+        table.head-qr-row { width: 100%; border-collapse: collapse; margin: 0; }
+        table.head-qr-row td { border: 0; padding: 0 0 0 2mm; vertical-align: middle; text-align: right; }
+        td.head-qr-cell { width: 13mm; }
+        img.qr { width: 12mm; height: 12mm; }
         .org { font-size: 8pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5pt; margin: 0; }
         .event { font-size: 9pt; font-weight: bold; margin: 0; }
         .title { font-size: 20pt; font-weight: bold; letter-spacing: 2pt; margin: 0; line-height: 1; }
@@ -69,6 +73,11 @@
         .scale-small table.grid td { font-size: 13pt; padding: 2.5mm 0; }
         .scale-small .title { font-size: 13pt; }
         .scale-small .prizes p { font-size: 6.5pt; }
+        .scale-small td.head-qr-cell { width: 9mm; }
+        .scale-small img.qr { width: 8mm; height: 8mm; }
+
+        .card--multi td.head-qr-cell { width: 10mm; }
+        .card--multi img.qr { width: 9mm; height: 9mm; }
 
         /* Vários blocos por cartela: escala segura para caber no A4
            sem reduzir os números a tamanho ilegível */

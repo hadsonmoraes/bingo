@@ -1,9 +1,11 @@
 <?php
 
 use App\Http\Controllers\CardController;
+use App\Http\Controllers\CardPublicController;
 use App\Http\Controllers\CardTemplateController;
 use App\Http\Controllers\DrawController;
 use App\Http\Controllers\GameController;
+use App\Http\Controllers\PdfExportController;
 use App\Http\Controllers\PrizeController;
 use App\Http\Controllers\WinnerController;
 use Illuminate\Support\Facades\Route;
@@ -35,6 +37,10 @@ Route::post('/games/{game}/draws/undo', [DrawController::class, 'undo'])->name('
 // Tela pública (TV / projetor)
 Route::get('/games/{game}/screen', [GameController::class, 'screen'])->name('games.screen');
 
+// Acompanhamento público de uma cartela (destino do QR Code impresso)
+Route::get('/games/{game}/card/{code}', [CardPublicController::class, 'show'])->name('games.cards.public');
+Route::get('/games/{game}/card/{code}/state', [CardPublicController::class, 'state'])->name('games.cards.public.state');
+
 // Prêmios
 Route::get('/games/{game}/prizes', [PrizeController::class, 'index'])->name('games.prizes.index');
 Route::post('/games/{game}/prizes', [PrizeController::class, 'store'])->name('games.prizes.store');
@@ -50,6 +56,11 @@ Route::post('/games/{game}/cards/{card}/buyer', [CardController::class, 'storeBu
 Route::post('/games/{game}/cards/{card}/cancel', [CardController::class, 'cancel'])->name('games.cards.cancel');
 Route::get('/games/{game}/cards/print', [CardController::class, 'print'])->name('games.cards.print');
 Route::get('/games/{game}/cards/pdf', [CardController::class, 'pdf'])->name('games.cards.pdf');
+
+// Exportações de PDF em fila (lotes grandes de cartelas)
+Route::get('/games/{game}/pdf-exports', [PdfExportController::class, 'index'])->name('games.pdf-exports.index');
+Route::get('/games/{game}/pdf-exports/{export}/download', [PdfExportController::class, 'download'])->name('games.pdf-exports.download');
+Route::delete('/games/{game}/pdf-exports/{export}', [PdfExportController::class, 'destroy'])->name('games.pdf-exports.destroy');
 
 // Arte para edição externa ("Baixar arte para editar")
 Route::get('/games/{game}/cards/art', [CardController::class, 'artSvg'])->name('games.cards.art');

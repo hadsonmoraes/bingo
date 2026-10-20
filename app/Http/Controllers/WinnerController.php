@@ -32,7 +32,7 @@ class WinnerController extends Controller
             'prize_id.exists' => 'Prêmio inválido.',
         ]);
 
-        $card = $game->cards()->where('code', trim($validated['card_code']))->first();
+        $card = $game->cards()->where('code', $this->normalizeCardCode($validated['card_code']))->first();
         if (! $card) {
             return $this->error($request, $game, 'Cartela não encontrada nesta partida.');
         }
@@ -212,6 +212,22 @@ class WinnerController extends Controller
         }
 
         return back()->with('success', $message);
+    }
+
+    /**
+     * Aceita o código puro (C-0001) ou a URL completa do QR Code
+     * impresso na cartela (leitores enviam o endereço inteiro).
+     */
+    private function normalizeCardCode(string $input): string
+    {
+        $code = trim($input);
+
+        if (str_contains($code, '/')) {
+            $path = parse_url($code, PHP_URL_PATH) ?: $code;
+            $code = substr($path, (int) strrpos($path, '/') + 1);
+        }
+
+        return strtoupper(rawurldecode(trim($code)));
     }
 
     private function error(Request $request, Game $game, string $message)

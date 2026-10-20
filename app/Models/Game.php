@@ -99,6 +99,11 @@ class Game extends Model
         return $this->hasMany(CardTemplate::class)->latest('updated_at');
     }
 
+    public function pdfExports(): HasMany
+    {
+        return $this->hasMany(PdfExport::class)->latest('id');
+    }
+
     public function totalNumbers(): int
     {
         return $this->number_max - $this->number_min + 1;

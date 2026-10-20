@@ -28,6 +28,16 @@
         </div>
     @endif
 
+    {{-- Exportações de PDF: lotes grandes gerados pela fila --}}
+    <div id="pdf-exports-panel" class="mt-4 hidden rounded-2xl bg-white p-5 shadow"
+         data-poll-url="{{ route('games.pdf-exports.index', $game) }}">
+        <h2 class="text-sm font-bold">Exportações de PDF</h2>
+        <p class="mt-0.5 text-xs text-slate-500">
+            Lotes grandes são gerados em segundo plano (fila) — o download (ZIP com os PDFs) aparece assim que o arquivo fica pronto.
+        </p>
+        <ul id="pdf-exports-list" class="mt-2 divide-y divide-slate-100"></ul>
+    </div>
+
     <div class="mt-6 grid gap-6 lg:grid-cols-[380px_1fr]">
         <div class="h-fit space-y-6">
             <form method="POST" action="{{ route('games.cards.generate', $game) }}" class="rounded-2xl bg-white p-6 shadow">

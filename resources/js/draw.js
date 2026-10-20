@@ -55,6 +55,11 @@ const winnerUndoModal = document.getElementById('winner-undo-modal');
 const winnerUndoReason = document.getElementById('winner-undo-reason');
 const winnerUndoConfirm = document.getElementById('winner-undo-confirm');
 const winnerUndoCancel = document.getElementById('winner-undo-cancel');
+const scanBtn = document.getElementById('scan-btn');
+const scanModal = document.getElementById('scan-modal');
+const scanVideo = document.getElementById('scan-video');
+const scanStatus = document.getElementById('scan-status');
+const scanCancel = document.getElementById('scan-cancel');
 
 let entry = '';
 let pendingWinnerId = null;
@@ -329,6 +334,81 @@ function showWinnerOverlay(winner) {
         winnerOverlay.classList.remove('flex');
     }, 8000);
 }
+
+// --- Escanear QR da cartela com a câmera ---
+// Usa a BarcodeDetector do navegador (sem dependências). Requer contexto
+// seguro: HTTPS ou acesso via localhost — na rede local via HTTP a câmera
+// fica bloqueada pelo próprio navegador; nesse caso, digite o código ou
+// use um leitor USB (que funciona como teclado).
+let scanStream = null;
+let scanDetector = null;
+let scanActive = false;
+
+function extractCardCode(raw) {
+    // Aceita o código puro (C-0001) ou a URL completa do QR impresso
+    const value = String(raw || '').trim();
+    if (!value.includes('/')) {
+        return value;
+    }
+
+    const path = value.split('?')[0].split('#')[0];
+
+    return path.substring(path.lastIndexOf('/') + 1);
+}
+
+function closeScan() {
+    scanActive = false;
+    scanStream?.getTracks().forEach((track) => track.stop());
+    scanStream = null;
+    scanModal.classList.add('hidden');
+}
+
+async function scanLoop() {
+    if (!scanActive) {
+        return;
+    }
+
+    try {
+        const codes = await scanDetector.detect(scanVideo);
+        const code = codes.length > 0 ? extractCardCode(codes[0].rawValue) : '';
+
+        if (code) {
+            cardCodeInput.value = code;
+            closeScan();
+            playSuccessChime();
+            prizeSelect.focus();
+
+            return;
+        }
+    } catch (e) { /* tenta de novo no próximo ciclo */ }
+
+    setTimeout(scanLoop, 250);
+}
+
+scanBtn?.addEventListener('click', async () => {
+    if (!('BarcodeDetector' in window) || !navigator.mediaDevices) {
+        showAlert('Este navegador não suporta leitura de QR pela câmera. Digite o código ou use um leitor USB.', 'error');
+
+        return;
+    }
+
+    try {
+        scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    } catch (e) {
+        showAlert('Não foi possível acessar a câmera — o navegador exige HTTPS ou acesso via localhost.', 'error');
+
+        return;
+    }
+
+    scanDetector ??= new BarcodeDetector({ formats: ['qr_code'] });
+    scanVideo.srcObject = scanStream;
+    scanModal.classList.remove('hidden');
+    scanStatus.textContent = 'Aponte a câmera para o QR Code da cartela…';
+    scanActive = true;
+    setTimeout(scanLoop, 300);
+});
+
+scanCancel?.addEventListener('click', closeScan);
 
 // --- Desfazer validação de ganhador (ex.: cartela não vendida) ---
 winnersList?.addEventListener('click', (e) => {

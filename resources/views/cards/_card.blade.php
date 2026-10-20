@@ -29,11 +29,17 @@
             </div>
         </div>
         <div class="card-header__meta">
-            <p class="card-header__title">AÇÃO ENTRE AMIGOS</p>
-            <p class="card-header__code">Cartela <strong>{{ $card->code }}</strong></p>
-            @if ($showDate && $game->event_date)
-                <p class="card-header__date">{{ $game->event_date->format('d/m/Y') }}</p>
+            @if (($showQr ?? true) && ($qrCodes[$card->id] ?? null))
+                <img class="card-header__qr" src="{{ $qrCodes[$card->id] }}"
+                    alt="QR Code para acompanhar a cartela {{ $card->code }}">
             @endif
+            <div class="card-header__meta-text">
+                <p class="card-header__title">AÇÃO ENTRE AMIGOS</p>
+                <p class="card-header__code">Cartela <strong>{{ $card->code }}</strong></p>
+                @if ($showDate && $game->event_date)
+                    <p class="card-header__date">{{ $game->event_date->format('d/m/Y') }}</p>
+                @endif
+            </div>
         </div>
     </div>
 

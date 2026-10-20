@@ -52,7 +52,9 @@
         .card-header__org { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
         .card-header__event { font-size: 10px; font-weight: 700; color: #0f172a; }
         .card-header__texts { min-width: 0; }
-        .card-header__meta { text-align: right; }
+        .card-header__meta { text-align: right; display: flex; align-items: center; justify-content: flex-end; gap: 2.5mm; }
+        .card-header__meta-text { text-align: right; }
+        .card-header__qr { width: 13mm; height: 13mm; }
         .card-header__title { font-size: 22px; font-weight: 900; letter-spacing: 2px; line-height: 1; color: #0f172a; }
         .card-header__code { font-size: 11px; font-weight: 600; color: #0f172a; }
         .card-header__date { font-size: 9px; color: #334155; }
@@ -112,6 +114,8 @@
         .bingo-card--4:not(.has-multi-blocks) .card-grid td { font-size: 15px; padding: 2.5mm 0; }
         .bingo-card--4:not(.has-multi-blocks) .card-header__title { font-size: 15px; }
         .bingo-card--4:not(.has-multi-blocks) .card-prizes__list { font-size: 7.5px; }
+        .bingo-card--4:not(.has-multi-blocks) .card-header__qr { width: 9mm; height: 9mm; }
+        .bingo-card.has-multi-blocks .card-header__qr { width: 10mm; height: 10mm; }
         .bingo-card.has-multi-blocks .card-grid td { font-size: 13px; padding: 2.0mm 0; }
         .bingo-card.has-multi-blocks .card-grid th { font-size: 9px; padding: 1.0mm 0; }
         .bingo-card.has-multi-blocks .card-header__title { font-size: 20px; }
@@ -166,6 +170,8 @@
                     <label><input type="checkbox" name="split_blocks" value="1" {{ request()->boolean('split_blocks') ? 'checked' : '' }} onchange="this.form.submit()"> Dividir blocos em mais de uma folha</label>
                 @endif
             @endif
+            <input type="hidden" name="qr" value="0">
+            <label><input type="checkbox" name="qr" value="1" {{ $showQr ? 'checked' : '' }} onchange="this.form.submit()"> QR Code</label>
             <label><input type="checkbox" name="stub" value="1" {{ $stub ? 'checked' : '' }} onchange="this.form.submit()"> Com canhoto</label>
             <label><input type="checkbox" name="prizes" value="1" {{ $showPrizes ? 'checked' : '' }} onchange="this.form.submit()"> Prêmios</label>
             <label><input type="checkbox" name="price" value="1" {{ $showPrice ? 'checked' : '' }} onchange="this.form.submit()"> Valor</label>

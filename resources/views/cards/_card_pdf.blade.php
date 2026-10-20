@@ -19,11 +19,20 @@
                 <p class="event">{{ $game->name }}</p>
             </td>
             <td class="head-meta">
-                <p class="title">AÇÃO ENTRE AMIGOS</p>
-                <p class="code">Cartela {{ $card->code }}</p>
-                @if ($showDate && $game->event_date)
-                    <p class="date">{{ $game->event_date->format('d/m/Y') }}</p>
-                @endif
+                <table class="head-qr-row"><tr>
+                    @if (($showQr ?? true) && ($qrCodes[$card->id] ?? null))
+                        <td class="head-qr-cell">
+                            <img class="qr" src="{{ $qrCodes[$card->id] }}" alt="QR Code para acompanhar a cartela {{ $card->code }}">
+                        </td>
+                    @endif
+                    <td>
+                        <p class="title">AÇÃO ENTRE AMIGOS</p>
+                        <p class="code">Cartela {{ $card->code }}</p>
+                        @if ($showDate && $game->event_date)
+                            <p class="date">{{ $game->event_date->format('d/m/Y') }}</p>
+                        @endif
+                    </td>
+                </tr></table>
             </td>
         </tr>
     </table>

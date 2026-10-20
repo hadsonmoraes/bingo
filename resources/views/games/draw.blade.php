@@ -100,14 +100,18 @@
                 <h2 class="text-sm font-bold">Verificar ganhador</h2>
                 <p class="mt-0.5 text-xs text-slate-500">Prêmio em disputa: <strong id="current-prize-name">—</strong></p>
                 <p class="mt-0.5 text-[11px] text-slate-400">
-                    Informe o código da cartela e selecione o prêmio: o sistema valida
+                    Informe o código da cartela (ou escaneie o QR Code impresso com 📷) e selecione o prêmio: o sistema valida
                     automaticamente o <strong>bloco numérico</strong> correspondente a esse prêmio.
                     Empates são permitidos: é possível validar mais de uma cartela para o mesmo prêmio.
                 </p>
 
                 <div class="mt-2 grid gap-2 sm:grid-cols-2">
-                    <input id="card-code" type="text" placeholder="Código da cartela (ex.: C-0001)"
-                        class="w-full rounded-xl border-slate-300 py-1.5 text-sm font-mono uppercase focus:border-amber-500 focus:ring-amber-500">
+                    <div class="flex gap-1.5">
+                        <input id="card-code" type="text" placeholder="Código da cartela (ex.: C-0001)"
+                            class="w-full min-w-0 flex-1 rounded-xl border-slate-300 py-1.5 text-sm font-mono uppercase focus:border-amber-500 focus:ring-amber-500">
+                        <button id="scan-btn" type="button" title="Escanear o QR Code da cartela com a câmera"
+                            class="shrink-0 rounded-xl bg-slate-800 px-3 py-1.5 text-sm font-bold text-white hover:bg-slate-700">📷</button>
+                    </div>
                     <select id="prize-select"
                         class="w-full rounded-xl border-slate-300 py-1.5 text-sm focus:border-amber-500 focus:ring-amber-500">
                         <option value="">Selecione o prêmio…</option>
@@ -219,6 +223,20 @@
                 <button id="winner-undo-confirm" type="button"
                     class="rounded-xl bg-red-600 px-5 py-2 font-bold text-white hover:bg-red-500">Desfazer
                     validação</button>
+            </div>
+        </div>
+    </div>
+
+    {{-- Modal: escanear QR da cartela com a câmera --}}
+    <div id="scan-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-slate-900/70 p-4">
+        <div class="w-full max-w-sm rounded-2xl bg-white p-4 shadow-2xl">
+            <h3 class="text-sm font-bold">Escanear QR da cartela</h3>
+            <p id="scan-status" class="mt-1 text-xs text-slate-500">Aponte a câmera para o QR Code da cartela…</p>
+            <video id="scan-video" class="mt-2 aspect-video w-full rounded-xl bg-slate-900 object-cover" autoplay playsinline
+                muted></video>
+            <div class="mt-3 flex justify-end">
+                <button id="scan-cancel" type="button"
+                    class="rounded-xl bg-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-300">Fechar</button>
             </div>
         </div>
     </div>

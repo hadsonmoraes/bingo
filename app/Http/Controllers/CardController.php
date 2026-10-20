@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\GenerateCardsPdfJob;
 use App\Models\Card;
 use App\Models\Game;
 use App\Models\GameEvent;
+use App\Models\PdfExport;
 use App\Services\ArtExportService;
 use App\Services\CardGenerator;
-use App\Services\CardLayoutService;
+use App\Services\CardPrintService;
 use App\Services\PdfService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -140,28 +142,49 @@ class CardController extends Controller
      */
     public function print(Request $request, Game $game)
     {
-        $cards = $this->cardsForPrint($request, $game);
+        $prints = app(CardPrintService::class);
+        $cards = $prints->cardsForFilters($game, $request->query());
 
         if ($cards->isEmpty()) {
             return redirect()->route('games.cards.index', $game)->with('error', 'Gere cartelas antes de imprimir.');
         }
 
-        $this->issueCards($game, $cards);
+        $prints->issue($game, $cards);
 
-        return view('cards.print', $this->printData($request, $game, $cards));
+        return view('cards.print', $prints->data($game, $request->query(), $cards));
     }
 
+    /**
+     * PDF A4: lotes grandes (acima do limite síncrono) são gerados pela
+     * fila — centenas de páginas dompdf não cabem num request HTTP.
+     */
     public function pdf(Request $request, Game $game, PdfService $pdf)
     {
-        $cards = $this->cardsForPrint($request, $game);
+        $prints = app(CardPrintService::class);
+        $cards = $prints->cardsForFilters($game, $request->query());
 
         if ($cards->isEmpty()) {
             return redirect()->route('games.cards.index', $game)->with('error', 'Gere cartelas antes de gerar o PDF.');
         }
 
-        $this->issueCards($game, $cards);
+        if ($cards->count() > CardPrintService::INLINE_MAX_CARDS) {
+            $export = $game->pdfExports()->create([
+                'status' => PdfExport::STATUS_PENDING,
+                'cards_count' => $cards->count(),
+                'filters' => $request->query(),
+                'base_url' => $request->root(),
+            ]);
 
-        return $pdf->render('cards.pdf', $this->printData($request, $game, $cards), "cartelas-{$game->id}.pdf");
+            GenerateCardsPdfJob::dispatch($export);
+
+            return redirect()
+                ->route('games.cards.index', $game)
+                ->with('success', "PDF de {$cards->count()} cartelas está sendo gerado em segundo plano. Acompanhe em “Exportações de PDF” — o download (ZIP com os PDFs) aparece quando o arquivo estiver pronto.");
+        }
+
+        $prints->issue($game, $cards);
+
+        return $pdf->render('cards.pdf', $prints->data($game, $request->query(), $cards), "cartelas-{$game->id}.pdf");
     }
 
     /**
@@ -181,92 +204,5 @@ class CardController extends Controller
     public function artModelBase(Game $game, ArtExportService $art)
     {
         return $art->svgModelBase($game);
-    }
-
-    private function cardsForPrint(Request $request, Game $game)
-    {
-        $query = $game->cards()->orderBy('id');
-
-        if ($request->filled('batch')) {
-            $query->where('batch', (int) $request->query('batch'));
-        }
-
-        if ($code = $request->query('card')) {
-            $query->where('code', trim($code));
-        }
-
-        return $query->get();
-    }
-
-    private function printData(Request $request, Game $game, $cards): array
-    {
-        $blocksCount = $cards->first()?->effectiveBlocks()->count() ?? 1;
-        $layout = app(CardLayoutService::class)->layout($game, $blocksCount);
-
-        // Modelo de arte personalizada aplicado à geração (padrão do
-        // evento quando nenhum for informado). A arte nunca altera os
-        // dados do jogo — apenas a aparência visual.
-        $template = null;
-        if ($request->query('template') === 'none') {
-            $template = null;
-        } elseif ($request->filled('template')) {
-            $template = $game->cardTemplates()->find((int) $request->query('template'));
-        } elseif (! $request->exists('template')) {
-            $template = $game->cardTemplates()->where('is_default', true)->first();
-        }
-
-        $templateWarnings = [];
-        if ($template) {
-            $templateWarnings = $template->missingAreas($blocksCount);
-        }
-
-        // Blocos divididos em mais de uma folha quando não couberem
-        // de forma legível e o organizador autorizar a divisão.
-        $splitBlocks = $request->boolean('split_blocks') && $layout['warning'];
-
-        $parts = [];
-        foreach ($cards as $card) {
-            $cardBlocks = $card->effectiveBlocks();
-            $chunks = $splitBlocks || $cardBlocks->count() > $layout['blocks_per_sheet']
-                ? $cardBlocks->chunk($layout['blocks_per_sheet'])
-                : [$cardBlocks];
-
-            foreach ($chunks as $chunk) {
-                $parts[] = ['card' => $card, 'blocks' => $chunk->values()];
-            }
-        }
-
-        return [
-            'game' => $game,
-            'cards' => $cards,
-            'parts' => $parts,
-            'layout' => $layout,
-            'blocksCount' => $blocksCount,
-            'template' => $template,
-            'templateWarnings' => $templateWarnings,
-            'perPage' => $blocksCount > 1
-                ? 1
-                : (in_array((int) $request->query('per_page'), [1, 2, 4]) ? (int) $request->query('per_page') : 2),
-            'stub' => $request->boolean('stub', true),
-            'showPrizes' => $request->boolean('prizes', true),
-            'showPrice' => $request->boolean('price', true),
-            'showBuyer' => $request->boolean('buyer', true),
-            'showDate' => $request->boolean('date', true),
-        ];
-    }
-
-    /**
-     * Primeira emissão: registra a data e congela os prêmios exibidos.
-     */
-    private function issueCards(Game $game, $cards): void
-    {
-        foreach ($cards as $card) {
-            if ($card->printed_at === null) {
-                $card->forceFill([
-                    'printed_at' => now(),
-                    'prize_snapshot' => $card->prizesForPrint(),
-                ])->save();
-            }
-        }
     }
 }
