@@ -1,4 +1,4 @@
-# Bingo — Globo físico com sorteio manual 2
+# Bingo — Globo físico com sorteio manual
 
 Sistema de bingo presencial para operar com um **globo físico girado manualmente por um operador**. O sistema **não sorteia números automaticamente** e **não simula globo virtual**: cada pedra retirada do globo é identificada pelo operador e registrada manualmente.
 
