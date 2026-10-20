@@ -38,6 +38,7 @@ Route::get('/games/{game}/screen', [GameController::class, 'screen'])->name('gam
 // Prêmios
 Route::get('/games/{game}/prizes', [PrizeController::class, 'index'])->name('games.prizes.index');
 Route::post('/games/{game}/prizes', [PrizeController::class, 'store'])->name('games.prizes.store');
+Route::post('/games/{game}/prizes/advance', [PrizeController::class, 'advance'])->name('games.prizes.advance');
 Route::get('/games/{game}/prizes/{prize}/edit', [PrizeController::class, 'edit'])->name('games.prizes.edit');
 Route::put('/games/{game}/prizes/{prize}', [PrizeController::class, 'update'])->name('games.prizes.update');
 Route::delete('/games/{game}/prizes/{prize}', [PrizeController::class, 'destroy'])->name('games.prizes.destroy');

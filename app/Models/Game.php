@@ -33,6 +33,7 @@ class Game extends Model
         'card_price',
         'theme_color',
         'na_boa_threshold',
+        'current_prize_id',
     ];
 
     protected function casts(): array
@@ -46,6 +47,7 @@ class Game extends Model
             'event_date' => 'date',
             'card_price' => 'decimal:2',
             'na_boa_threshold' => 'integer',
+            'current_prize_id' => 'integer',
         ];
     }
 

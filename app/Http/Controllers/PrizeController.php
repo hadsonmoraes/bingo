@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Game;
+use App\Models\GameEvent;
 use App\Models\Prize;
+use App\Services\GameStateService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -47,6 +49,64 @@ class PrizeController extends Controller
         ]);
 
         return back()->with('success', 'Prêmio cadastrado.');
+    }
+
+    /**
+     * Avança manualmente o ponteiro do prêmio em disputa para o próximo
+     * prêmio sem ganhador na sequência (do último para o primeiro). O
+     * prêmio anterior continua disponível para validação manual.
+     */
+    public function advance(Request $request, Game $game, GameStateService $state)
+    {
+        $current = $state->currentPrize($game);
+        $next = $state->nextPrize($game);
+
+        if ($next === null) {
+            $message = $current === null
+                ? 'Não há prêmios em disputa para avançar.'
+                : sprintf('"%s" é o último prêmio da disputa.', $current->name);
+
+            return $this->advanceError($request, $game, $message);
+        }
+
+        $game->update(['current_prize_id' => $next->id]);
+
+        $game->events()->create([
+            'type' => GameEvent::TYPE_PRIZE_ADVANCED,
+            'data' => [
+                'from' => $current?->name,
+                'to' => $next->name,
+            ],
+        ]);
+
+        $message = sprintf(
+            'Prêmio em disputa avançado: "%s" → "%s".',
+            $current?->name ?? '—',
+            $next->name,
+        );
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => $message,
+                'type' => 'success',
+                'state' => $state->all($game->refresh()),
+            ]);
+        }
+
+        return back()->with('success', $message);
+    }
+
+    private function advanceError(Request $request, Game $game, string $message)
+    {
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => $message,
+                'type' => 'error',
+                'state' => app(GameStateService::class)->all($game),
+            ], 422);
+        }
+
+        return back()->with('error', $message);
     }
 
     public function edit(Game $game, Prize $prize)

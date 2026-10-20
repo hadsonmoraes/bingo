@@ -43,10 +43,6 @@ class WinnerController extends Controller
 
         $prize = Prize::where('game_id', $game->id)->findOrFail($validated['prize_id']);
 
-        if ($prize->winner()->exists()) {
-            return $this->error($request, $game, 'Este prêmio já possui ganhador validado.');
-        }
-
         // Bloco numérico correspondente ao prêmio nesta cartela.
         // O comprador é preenchido automaticamente quando cadastrado, mas o
         // nome do ganhador real pode ser diferente e informado manualmente.
@@ -56,6 +52,21 @@ class WinnerController extends Controller
         if ($block === null && $blocks->count() > 1) {
             return $this->error($request, $game, 'Este prêmio não possui bloco numérico nesta cartela. Gere um novo lote com os prêmios atualizados.');
         }
+
+        // Empate é permitido: o prêmio pode ter vários ganhadores
+        // (cartelas diferentes validadas pelo operador). Apenas a mesma
+        // cartela/bloco não pode ser validada duas vezes no mesmo prêmio.
+        $duplicate = $game->winners()
+            ->where('prize_id', $prize->id)
+            ->where('card_id', $card->id)
+            ->when($block?->id, fn ($query) => $query->where('card_block_id', $block?->id), fn ($query) => $query->whereNull('card_block_id'))
+            ->exists();
+
+        if ($duplicate) {
+            return $this->error($request, $game, 'Esta cartela já foi validada para este prêmio.');
+        }
+
+        $hadWinner = $prize->winner()->exists();
 
         $grid = $block?->grid ?? $card->grid;
 
@@ -80,7 +91,7 @@ class WinnerController extends Controller
                 'validated_at' => now(),
             ]);
 
-            if ($block) {
+            if ($block && $block->status !== CardBlock::STATUS_WINNER) {
                 $block->update(['status' => CardBlock::STATUS_WINNER]);
             }
             $card->update(['status' => Card::STATUS_WINNER]);
@@ -99,7 +110,8 @@ class WinnerController extends Controller
         });
 
         $message = sprintf(
-            'TEMOS UM GANHADOR! %s — cartela %s%s — prêmio "%s" (%s) — %s',
+            '%s! %s — cartela %s%s — prêmio "%s" (%s) — %s',
+            $hadWinner ? 'EMPATE REGISTRADO' : 'TEMOS UM GANHADOR',
             $winnerName ?: 'Ganhador',
             $card->code,
             $block ? '/'.$block->label() : '',
@@ -180,6 +192,10 @@ class WinnerController extends Controller
                     'reason' => $validated['reason'],
                 ],
             ]);
+
+            // A correção devolve o prêmio à disputa: ele volta a ser
+            // o prêmio em disputa, mesmo que o ponteiro já tivesse avançado.
+            $game->update(['current_prize_id' => $prize?->id]);
         });
 
         $message = sprintf(

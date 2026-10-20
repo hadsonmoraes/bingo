@@ -43,6 +43,7 @@
                 <p class="text-sm font-semibold uppercase tracking-widest text-slate-400">Prêmio em disputa</p>
                 <p id="prize-name" class="text-2xl font-black text-amber-400">—</p>
                 <p id="prize-rule" class="text-base font-semibold text-slate-300">—</p>
+                <p id="prize-position" class="text-sm font-semibold text-slate-400">—</p>
             </div>
         </div>
 
@@ -67,6 +68,11 @@
     <button id="fullscreen-btn" type="button"
             class="fixed bottom-4 right-4 z-50 rounded-full bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20">
         ⛶ Tela cheia
+    </button>
+
+    <button id="sound-toggle" type="button" title="Ativar/desativar sons"
+            class="fixed bottom-4 right-32 z-50 rounded-full bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/20">
+        🔊
     </button>
 </body>
 </html>

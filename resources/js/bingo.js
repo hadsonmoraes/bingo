@@ -80,11 +80,14 @@ export function updateBoard(container, state) {
     });
 }
 
-export function renderHistory(container, state, limit = null) {
+export function renderHistory(container, state, limit = null, compact = false) {
     const items = limit ? state.history.slice(0, limit) : state.history;
+    const chipClass = compact
+        ? 'flex shrink-0 items-center justify-center rounded-lg bg-slate-700 px-2.5 py-1 text-base font-black text-white'
+        : 'flex shrink-0 items-center justify-center rounded-xl bg-slate-700 px-3 py-2 text-2xl font-black text-white';
     container.innerHTML = items.map((item) => `
-        <span class="flex shrink-0 items-center justify-center rounded-xl bg-slate-700 px-3 py-2 text-2xl font-black text-white">
-            ${item.letter ? `<span class="mr-1 text-base text-amber-300">${item.letter}</span>` : ''}${item.number}
+        <span class="${chipClass}">
+            ${item.letter ? `<span class="mr-0.5 text-sm text-amber-300">${item.letter}</span>` : ''}${item.number}
         </span>
     `).join('');
 }
@@ -92,7 +95,20 @@ export function renderHistory(container, state, limit = null) {
 // Alertas sonoros via Web Audio (funciona offline, sem arquivos)
 let audioCtx = null;
 
+const SOUND_STORAGE_KEY = 'bingo-sound';
+
+/** Som ativado/desativado pelo operador (persistido no navegador). */
+export function isSoundEnabled() {
+    return localStorage.getItem(SOUND_STORAGE_KEY) !== 'off';
+}
+
+export function setSoundEnabled(enabled) {
+    localStorage.setItem(SOUND_STORAGE_KEY, enabled ? 'on' : 'off');
+}
+
 export function playErrorBeep() {
+    if (!isSoundEnabled()) return;
+
     const ctx = getAudio();
     if (!ctx) return;
 
@@ -108,6 +124,8 @@ export function playErrorBeep() {
 }
 
 export function playSuccessChime() {
+    if (!isSoundEnabled()) return;
+
     const ctx = getAudio();
     if (!ctx) return;
 
@@ -126,6 +144,8 @@ export function playSuccessChime() {
 }
 
 export function playWinnerFanfare() {
+    if (!isSoundEnabled()) return;
+
     const ctx = getAudio();
     if (!ctx) return;
 

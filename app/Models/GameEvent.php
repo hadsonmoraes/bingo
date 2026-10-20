@@ -27,6 +27,8 @@ class GameEvent extends Model
 
     public const TYPE_CARD_CANCELLED = 'card_cancelled';
 
+    public const TYPE_PRIZE_ADVANCED = 'prize_advanced';
+
     public const TYPE_LABELS = [
         self::TYPE_DRAW_REGISTERED => 'Pedra registrada',
         self::TYPE_DRAW_REVERTED => 'Correção (registro desfeito)',
@@ -38,6 +40,7 @@ class GameEvent extends Model
         self::TYPE_WINNER_REVERTED => 'Ganhador desfeito (correção)',
         self::TYPE_BUYER_UPDATED => 'Comprador de cartela registrado',
         self::TYPE_CARD_CANCELLED => 'Cartela cancelada',
+        self::TYPE_PRIZE_ADVANCED => 'Prêmio avançado manualmente',
     ];
 
     protected $fillable = ['game_id', 'type', 'data'];

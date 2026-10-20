@@ -1,4 +1,4 @@
-import { createBoard, updateBoard, renderHistory, playSuccessChime, playWinnerFanfare } from './bingo.js';
+import { createBoard, updateBoard, renderHistory, playSuccessChime, playWinnerFanfare, isSoundEnabled, setSoundEnabled } from './bingo.js';
 
 const state = JSON.parse(document.getElementById('state-data').textContent);
 const gameId = state.game.id;
@@ -9,6 +9,7 @@ const board = document.getElementById('board');
 const history = document.getElementById('history');
 const prizeName = document.getElementById('prize-name');
 const prizeRule = document.getElementById('prize-rule');
+const prizePosition = document.getElementById('prize-position');
 const remaining = document.getElementById('remaining-count');
 const winnerOverlay = document.getElementById('winner-overlay');
 const winnerMessage = document.getElementById('winner-message');
@@ -34,6 +35,9 @@ function render(st) {
 
     prizeName.textContent = state.current_prize?.name ?? 'Todos os prêmios já foram ganhos';
     prizeRule.textContent = state.current_prize?.rule_label ?? '';
+    prizePosition.textContent = state.current_prize
+        ? `Prêmio ${state.current_prize.position} de ${state.current_prize.total}`
+        : '';
 
     const naBoaCount = document.getElementById('na-boa-count');
     if (naBoaCount) naBoaCount.textContent = state.cards_summary?.na_boa ?? 0;
@@ -76,6 +80,23 @@ fullscreenBtn?.addEventListener('click', () => {
         document.documentElement.requestFullscreen().catch(() => {});
     }
 });
+
+// --- Som do telão (persistido no navegador) ---
+const soundToggle = document.getElementById('sound-toggle');
+
+function updateSoundToggle() {
+    if (soundToggle) {
+        soundToggle.textContent = isSoundEnabled() ? '🔊' : '🔇';
+        soundToggle.title = isSoundEnabled() ? 'Desativar sons' : 'Ativar sons';
+    }
+}
+
+soundToggle?.addEventListener('click', () => {
+    setSoundEnabled(!isSoundEnabled());
+    updateSoundToggle();
+});
+
+updateSoundToggle();
 
 // Polling: o sistema é local/offline, então a latência é desprezível.
 setInterval(poll, 2000);

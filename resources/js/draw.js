@@ -1,4 +1,4 @@
-import { createBoard, updateBoard, renderHistory, playErrorBeep, playSuccessChime, postJson } from './bingo.js';
+import { createBoard, updateBoard, renderHistory, playErrorBeep, playSuccessChime, postJson, isSoundEnabled, setSoundEnabled } from './bingo.js';
 
 const state = JSON.parse(document.getElementById('state-data').textContent);
 const gameId = state.game.id;
@@ -31,6 +31,14 @@ const winnerNameInput = document.getElementById('winner-name');
 const validateBtn = document.getElementById('validate-btn');
 const winnersList = document.getElementById('winners-list');
 const currentPrizeName = document.getElementById('current-prize-name');
+const soundToggle = document.getElementById('sound-toggle');
+const prizeBadge = document.getElementById('prize-badge');
+const prizeBadgeName = document.getElementById('prize-badge-name');
+const prizeBadgeMeta = document.getElementById('prize-badge-meta');
+const advanceBtn = document.getElementById('advance-btn');
+const advanceModal = document.getElementById('advance-modal');
+const advanceFrom = document.getElementById('advance-from');
+const advanceTo = document.getElementById('advance-to');
 const thresholdSelect = document.getElementById('threshold-select');
 const naBoaList = document.getElementById('na-boa-list');
 const csInPlay = document.getElementById('cs-in-play');
@@ -76,7 +84,7 @@ if (keypad) {
 function render(st) {
     Object.assign(state, st);
     updateBoard(keypad, state);
-    renderHistory(history, state);
+    renderHistory(history, state, null, true);
 
     lastDisplay.classList.toggle('opacity-30', !state.last);
     lastLetter.textContent = state.last?.letter ?? '—';
@@ -93,19 +101,37 @@ function render(st) {
     // desabilita visualmente números do painel; createBoard/updateBoard já controla estados
     winnerPanel?.classList.toggle('hidden', !['in_progress', 'paused'].includes(status));
 
-    // Seletor de prêmios em disputa
+    // Seletor de prêmios — inclui os já ganhos (empates são permitidos),
+    // marcados com o nome/cartela do primeiro ganhador validado.
     if (prizeSelect) {
         const current = prizeSelect.value;
         prizeSelect.innerHTML = '<option value="">Selecione o prêmio…</option>' + state.prizes
-            .filter((p) => p.winner === null)
-            .map((p) => `<option value="${p.id}">${p.name} — ${p.rule_label}</option>`)
+            .map((p) => {
+                const label = p.winner
+                    ? `${p.name} — ${p.rule_label} (✓ ${p.winner.name || p.winner.card_code || 'ganhador'})`
+                    : `${p.name} — ${p.rule_label}`;
+                return `<option value="${p.id}">${label}</option>`;
+            })
             .join('');
         if ([...prizeSelect.options].some((o) => o.value === current)) prizeSelect.value = current;
     }
 
     currentPrizeName.textContent = state.current_prize
-        ? `${state.current_prize.name} (${state.current_prize.rule_label})`
+        ? `Prêmio ${state.current_prize.position ?? '?'}/${state.current_prize.total ?? '?'} — ${state.current_prize.name} (${state.current_prize.rule_label})`
         : 'Todos os prêmios já foram ganhos';
+
+    // Destaque do prêmio em disputa no painel principal
+    if (prizeBadge) {
+        const hasPrize = Boolean(state.current_prize);
+        prizeBadge.classList.toggle('hidden', !hasPrize);
+        prizeBadge.classList.toggle('flex', hasPrize);
+        if (hasPrize) {
+            prizeBadgeName.textContent = state.current_prize.name;
+            prizeBadgeMeta.textContent = `${state.current_prize.position}/${state.current_prize.total} · ${state.current_prize.rule_label}`;
+        }
+    }
+
+    advanceBtn?.classList.toggle('hidden', !state.next_prize);
 
     if (winnersList) {
         winnersList.innerHTML = state.winners.map((w) => `
@@ -342,6 +368,51 @@ winnerUndoConfirm?.addEventListener('click', async () => {
 });
 
 winnerUndoReason?.addEventListener('input', () => winnerUndoReason.classList.remove('ring-2', 'ring-red-400'));
+
+// --- Avançar prêmio em disputa ---
+advanceBtn?.addEventListener('click', () => {
+    if (!state.next_prize) return;
+
+    advanceFrom.textContent = state.current_prize
+        ? `${state.current_prize.name} (${state.current_prize.rule_label})`
+        : '—';
+    advanceTo.textContent = `${state.next_prize.name} (${state.next_prize.rule_label})`;
+    advanceModal?.classList.remove('hidden');
+});
+
+document.getElementById('advance-cancel')?.addEventListener('click', () => advanceModal?.classList.add('hidden'));
+advanceModal?.addEventListener('click', (e) => {
+    if (e.target === advanceModal) advanceModal.classList.add('hidden');
+});
+
+document.getElementById('advance-confirm')?.addEventListener('click', async () => {
+    const { ok, data } = await postJson(`/games/${gameId}/prizes/advance`);
+
+    advanceModal.classList.add('hidden');
+    showAlert(data.message || (ok ? 'Prêmio avançado.' : 'Não foi possível avançar o prêmio.'), ok ? 'success' : 'error');
+    if (data.state) render(data.state);
+});
+
+// --- Som da tela (persistido no navegador) ---
+function updateSoundToggle() {
+    if (soundToggle) {
+        soundToggle.textContent = isSoundEnabled() ? '🔊' : '🔇';
+        soundToggle.title = isSoundEnabled() ? 'Desativar sons' : 'Ativar sons';
+        soundToggle.classList.toggle('bg-slate-200', isSoundEnabled());
+        soundToggle.classList.toggle('text-slate-700', isSoundEnabled());
+        soundToggle.classList.toggle('bg-red-100', !isSoundEnabled());
+        soundToggle.classList.toggle('text-red-700', !isSoundEnabled());
+        soundToggle.classList.toggle('ring-2', !isSoundEnabled());
+        soundToggle.classList.toggle('ring-red-300', !isSoundEnabled());
+    }
+}
+
+soundToggle?.addEventListener('click', () => {
+    setSoundEnabled(!isSoundEnabled());
+    updateSoundToggle();
+});
+
+updateSoundToggle();
 
 // --- Limite de proximidade (cartelas na boa) ---
 thresholdSelect?.addEventListener('change', async () => {
