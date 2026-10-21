@@ -172,6 +172,28 @@ class CardBlocksTest extends TestCase
         $this->assertSame(2, $card->effectiveBlocks()->count());
     }
 
+    /** O sanitizador rejeita SVG com scripts, eventos inline ou links javascript:. */
+    public function test_dangerous_svg_uploads_are_rejected(): void
+    {
+        Storage::fake('public');
+        $game = $this->createGame(1);
+
+        $dangerousSvgs = [
+            'script tag' => '<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>',
+            'inline event' => '<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"></svg>',
+            'javascript link' => '<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg"><a href="javascript:alert(1)"><text>clique</text></a></svg>',
+        ];
+
+        foreach ($dangerousSvgs as $label => $svg) {
+            $this->post("/games/{$game->id}/card-templates", [
+                'name' => 'Arte '.$label,
+                'art' => UploadedFile::fake()->createWithContent('arte.svg', $svg, 'image/svg+xml'),
+            ])->assertSessionHas('error');
+
+            $this->assertDatabaseCount('card_templates', 0);
+        }
+    }
+
     /** 8. O PDF mantém as dimensões A4. */
     public function test_pdf_keeps_a4_dimensions(): void
     {

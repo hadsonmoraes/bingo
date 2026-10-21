@@ -2,9 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\Card;
 use App\Models\Game;
-use Illuminate\Support\Collection;
 
 /**
  * Calcula o arranjo visual dos blocos numéricos numa folha A4,
@@ -48,25 +46,5 @@ class CardLayoutService
             'warning' => $blocksCount > $blocksPerSheet,
             'blocks_count' => $blocksCount,
         ];
-    }
-
-    /**
-     * Divide os blocos de uma cartela em "partes de folha" quando ela
-     * possui mais blocos do que cabe com legibilidade em um único A4.
-     * Cada parte repete o código da cartela e o cabeçalho.
-     *
-     * @return array<int, array{card: Card, blocks: Collection}>
-     */
-    public function sheetParts(Card $card, ?int $blocksPerSheet = null): array
-    {
-        $blocks = $card->effectiveBlocks();
-        $blocksPerSheet ??= $this->layout($card->game, $blocks->count())['blocks_per_sheet'];
-
-        $parts = [];
-        foreach ($blocks->chunk($blocksPerSheet) as $chunk) {
-            $parts[] = ['card' => $card, 'blocks' => $chunk->values()];
-        }
-
-        return $parts;
     }
 }

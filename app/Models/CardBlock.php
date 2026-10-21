@@ -42,11 +42,6 @@ class CardBlock extends Model
         return 'B'.$this->position;
     }
 
-    public function fullLabel(): string
-    {
-        return $this->card?->code.'/'.$this->label();
-    }
-
     public function card(): BelongsTo
     {
         return $this->belongsTo(Card::class);

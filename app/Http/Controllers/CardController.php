@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\GenerateCardsRequest;
+use App\Http\Requests\StoreBuyerRequest;
 use App\Jobs\GenerateCardsJob;
 use App\Jobs\GenerateCardsPdfJob;
 use App\Models\Card;
@@ -57,14 +59,9 @@ class CardController extends Controller
      * verificação de duplicidade tem custo quadrático e travaria a
      * requisição HTTP com centenas de cartelas.
      */
-    public function generate(Request $request, Game $game)
+    public function generate(GenerateCardsRequest $request, Game $game, CardGenerator $generator)
     {
-        $validated = $request->validate([
-            'quantity' => ['required', 'integer', 'min:1', 'max:500'],
-        ], [
-            'quantity.required' => 'Informe a quantidade de cartelas.',
-            'quantity.max' => 'Gere no máximo 500 cartelas por vez.',
-        ]);
+        $validated = $request->validated();
 
         $quantity = (int) $validated['quantity'];
         $batch = ((int) $game->cards()->max('batch')) + 1;
@@ -78,11 +75,7 @@ class CardController extends Controller
                 ->with('generating_quantity', $quantity);
         }
 
-        $generator = app(CardGenerator::class);
-
-        for ($i = 0; $i < $quantity; $i++) {
-            $generator->createCard($game, batch: $batch);
-        }
+        $generator->generateBatch($game, $quantity, $batch);
 
         return back()->with('success', $quantity.' cartela(s) gerada(s) no lote '.$batch.'.');
     }
@@ -104,16 +97,9 @@ class CardController extends Controller
      * Cadastro digital do comprador (opcional) — também pode ser
      * preenchido à mão na própria cartela impressa.
      */
-    public function storeBuyer(Request $request, Game $game, Card $card)
+    public function storeBuyer(StoreBuyerRequest $request, Game $game, Card $card)
     {
-        $validated = $request->validate([
-            'buyer_name' => ['nullable', 'string', 'max:150'],
-            'buyer_phone' => ['nullable', 'string', 'max:40'],
-        ]);
-
-        if ($card->game_id !== $game->id) {
-            return back()->with('error', 'Cartela não pertence a esta partida.');
-        }
+        $validated = $request->validated();
 
         if ($card->status === Card::STATUS_CANCELLED || $card->status === Card::STATUS_WINNER) {
             return back()->with('error', 'Não é possível alterar o comprador desta cartela.');
@@ -140,10 +126,6 @@ class CardController extends Controller
 
     public function cancel(Request $request, Game $game, Card $card)
     {
-        if ($card->game_id !== $game->id) {
-            return back()->with('error', 'Cartela não pertence a esta partida.');
-        }
-
         if ($card->status === Card::STATUS_WINNER) {
             return back()->with('error', 'Não é possível cancelar uma cartela vencedora.');
         }

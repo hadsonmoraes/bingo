@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\RevertActionRequest;
+use App\Http\Requests\StoreDrawRequest;
 use App\Models\Game;
 use App\Models\GameEvent;
 use App\Services\GameStateService;
@@ -10,14 +12,13 @@ use Illuminate\Support\Facades\DB;
 
 class DrawController extends Controller
 {
-    public function store(Request $request, Game $game)
+    public function store(StoreDrawRequest $request, Game $game)
     {
-        $validated = $request->validate([
-            'number' => ['required', 'integer'],
-        ], [
-            'number.required' => 'Informe o número da pedra retirada do globo.',
-            'number.integer' => 'O número da pedra deve ser um valor inteiro.',
-        ]);
+        $validated = $request->validated();
+
+        if ($game->status !== Game::STATUS_IN_PROGRESS) {
+            return $this->error($request, $game, 'A partida precisa estar em andamento para registrar pedras.');
+        }
 
         $number = (int) $validated['number'];
 
@@ -29,10 +30,6 @@ class DrawController extends Controller
         // Impede registro duplicado na mesma rodada
         if ($game->draws()->where('number', $number)->exists()) {
             return $this->error($request, $game, "O número {$number} já foi sorteado nesta rodada.", 'duplicate');
-        }
-
-        if ($game->status !== Game::STATUS_IN_PROGRESS) {
-            return $this->error($request, $game, 'A partida precisa estar em andamento para registrar pedras.');
         }
 
         DB::transaction(function () use ($game, $number) {
@@ -65,18 +62,13 @@ class DrawController extends Controller
      * Desfaz o último registro de pedra, exigindo confirmação e
      * registrando a correção no histórico da partida.
      */
-    public function undo(Request $request, Game $game)
+    public function undo(RevertActionRequest $request, Game $game)
     {
         if (! in_array($game->status, [Game::STATUS_IN_PROGRESS, Game::STATUS_PAUSED])) {
             return $this->error($request, $game, 'Não é possível desfazer registros com a partida neste estado.');
         }
 
-        $validated = $request->validate([
-            'reason' => ['required', 'string', 'min:3', 'max:255'],
-        ], [
-            'reason.required' => 'Informe o motivo da correção.',
-            'reason.min' => 'Descreva o motivo da correção com mais detalhes.',
-        ]);
+        $validated = $request->validated();
 
         // reorder() remove o orderBy embutido na relação Game::draws()
         // (sequence ASC) — sem ele, first() devolveria a pedra mais antiga.

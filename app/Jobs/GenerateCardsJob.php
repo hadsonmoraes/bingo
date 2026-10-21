@@ -33,8 +33,6 @@ class GenerateCardsJob implements ShouldQueue
 
     public function handle(CardGenerator $generator): void
     {
-        for ($i = 0; $i < $this->quantity; $i++) {
-            $generator->createCard($this->game, batch: $this->batch);
-        }
+        $generator->generateBatch($this->game, $this->quantity, $this->batch);
     }
 }

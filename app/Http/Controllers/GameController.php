@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreGameRequest;
+use App\Http\Requests\UpdateGameRequest;
+use App\Http\Requests\UpdateNaBoaThresholdRequest;
 use App\Models\Card;
 use App\Models\Game;
 use App\Models\GameEvent;
@@ -25,26 +28,9 @@ class GameController extends Controller
         return view('games.create');
     }
 
-    public function store(Request $request)
+    public function store(StoreGameRequest $request)
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:120'],
-            'organization_name' => ['nullable', 'string', 'max:150'],
-            'event_date' => ['nullable', 'date'],
-            'card_price' => ['nullable', 'numeric', 'min:0'],
-            'theme_color' => ['nullable', 'in:'.implode(',', array_keys(Game::THEME_COLORS))],
-            'logo' => ['nullable', 'image', 'max:2048'],
-            'card_format' => ['required', 'in:75,90,custom'],
-            'number_min' => ['required', 'integer', 'min:1', 'max:200'],
-            'number_max' => ['required', 'integer', 'gt:number_min', 'max:200'],
-            'use_letters' => ['nullable', 'boolean'],
-            'letters_word' => ['nullable', 'string', 'max:10', 'regex:/^[\pL]{5}$/u'],
-        ], [
-            'name.required' => 'Informe o nome da partida.',
-            'number_max.gt' => 'O número máximo deve ser maior que o mínimo.',
-            'letters_word.regex' => 'A palavra do tema deve ter exatamente 5 letras (sem números ou símbolos).',
-        ]);
-
+        $validated = $request->validated();
         $format = $validated['card_format'];
 
         if ($format === '75') {
@@ -79,19 +65,9 @@ class GameController extends Controller
         return view('games.edit', ['game' => $game]);
     }
 
-    public function update(Request $request, Game $game)
+    public function update(UpdateGameRequest $request, Game $game)
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:120'],
-            'organization_name' => ['nullable', 'string', 'max:150'],
-            'event_date' => ['nullable', 'date'],
-            'card_price' => ['nullable', 'numeric', 'min:0'],
-            'theme_color' => ['nullable', 'in:'.implode(',', array_keys(Game::THEME_COLORS))],
-            'logo' => ['nullable', 'image', 'max:2048'],
-            'letters_word' => ['nullable', 'string', 'max:10', 'regex:/^[\pL]{5}$/u'],
-        ], [
-            'letters_word.regex' => 'A palavra do tema deve ter exatamente 5 letras (sem números ou símbolos).',
-        ]);
+        $validated = $request->validated();
 
         if ($request->boolean('remove_logo')) {
             if ($game->logo_path) {
@@ -114,11 +90,9 @@ class GameController extends Controller
         return redirect()->route('games.show', $game)->with('success', 'Dados do evento atualizados.');
     }
 
-    public function threshold(Request $request, Game $game)
+    public function threshold(UpdateNaBoaThresholdRequest $request, Game $game)
     {
-        $validated = $request->validate([
-            'threshold' => ['required', 'integer', 'min:0', 'max:5'],
-        ]);
+        $validated = $request->validated();
 
         $game->update(['na_boa_threshold' => $validated['threshold']]);
 

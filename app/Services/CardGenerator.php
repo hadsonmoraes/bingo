@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Card;
 use App\Models\CardBlock;
 use App\Models\Game;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class CardGenerator
@@ -15,19 +16,38 @@ class CardGenerator
     public const INLINE_MAX_GENERATE = 50;
 
     /**
+     * Gera um lote completo de cartelas compartilhando as combinações
+     * já existentes no evento — a verificação de duplicidade não
+     * recarrega todas as grades do banco a cada cartela.
+     *
+     * @return Collection<int, Card>
+     */
+    public function generateBatch(Game $game, int $quantity, int $batch = 1): Collection
+    {
+        $existingSignatures = $this->existingSignatures($game);
+
+        $cards = [];
+        for ($i = 0; $i < $quantity; $i++) {
+            $cards[] = $this->createCard($game, $batch, $existingSignatures);
+        }
+
+        return new Collection($cards);
+    }
+
+    /**
      * Gera uma nova cartela para a partida e retorna o model persistido.
      * Para cada prêmio cadastrado no evento é criado um bloco numérico
      * independente, válido e identificado — 1 prêmio = 1 bloco.
      * Os números são gerados aleatoriamente apenas no momento da criação
      * da cartela — nunca durante o sorteio das pedras.
      */
-    public function createCard(Game $game, ?string $holder = null, int $batch = 1): Card
+    public function createCard(Game $game, int $batch = 1, ?Collection $existingSignatures = null): Card
     {
-        return DB::transaction(function () use ($game, $holder, $batch) {
-            $prizes = $game->prizes()->orderBy('sort_order')->orderBy('id')->get();
+        // Sem lote prévio, carrega as combinações existentes do evento.
+        $existingSignatures ??= $this->existingSignatures($game);
 
-            // Combinações já existentes no evento (grades das cartelas e de todos os blocos)
-            $existingSignatures = $this->existingSignatures($game);
+        return DB::transaction(function () use ($game, $batch, $existingSignatures) {
+            $prizes = $game->prizes()->orderBy('sort_order')->orderBy('id')->get();
 
             $blocks = [];
             foreach ($prizes as $index => $prize) {
@@ -49,7 +69,6 @@ class CardGenerator
                 'code' => $code,
                 // Mantém a primeira grade na coluna legada (compatibilidade)
                 'grid' => $blocks[0]['grid'] ?? $this->generateUniqueGrid($game, $existingSignatures),
-                'holder' => $holder,
                 'batch' => $batch,
                 'status' => Card::STATUS_AVAILABLE,
             ]);

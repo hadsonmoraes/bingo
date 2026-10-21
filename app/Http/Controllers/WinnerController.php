@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\RevertActionRequest;
+use App\Http\Requests\ValidateWinnerRequest;
 use App\Models\Card;
 use App\Models\CardBlock;
 use App\Models\Game;
@@ -21,16 +23,9 @@ class WinnerController extends Controller
      * é feita sobre o BLOCO numérico correspondente ao prêmio — nunca
      * sobre a cartela inteira.
      */
-    public function validate(Request $request, Game $game, WinRuleValidator $validator)
+    public function validate(ValidateWinnerRequest $request, Game $game, WinRuleValidator $validator)
     {
-        $validated = $request->validate([
-            'card_code' => ['required', 'string'],
-            'prize_id' => ['required', 'integer', 'exists:prizes,id'],
-            'winner_name' => ['nullable', 'string', 'max:120'],
-        ], [
-            'card_code.required' => 'Informe o código da cartela.',
-            'prize_id.exists' => 'Prêmio inválido.',
-        ]);
+        $validated = $request->validated();
 
         $card = $game->cards()->where('code', $this->normalizeCardCode($validated['card_code']))->first();
         if (! $card) {
@@ -151,18 +146,9 @@ class WinnerController extends Controller
      * volta à disputa, a cartela e o bloco retornam ao jogo e a
      * correção fica registrada no histórico com motivo obrigatório.
      */
-    public function undo(Request $request, Game $game, Winner $winner)
+    public function undo(RevertActionRequest $request, Game $game, Winner $winner)
     {
-        if ($winner->game_id !== $game->id) {
-            return $this->error($request, $game, 'Registro de ganhador não pertence a esta partida.');
-        }
-
-        $validated = $request->validate([
-            'reason' => ['required', 'string', 'min:3', 'max:255'],
-        ], [
-            'reason.required' => 'Informe o motivo da correção.',
-            'reason.min' => 'Descreva o motivo da correção com mais detalhes.',
-        ]);
+        $validated = $request->validated();
 
         $card = $winner->card;
         $block = $winner->block;

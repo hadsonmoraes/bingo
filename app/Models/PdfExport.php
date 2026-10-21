@@ -55,7 +55,7 @@ class PdfExport extends Model
     /**
      * Caminho do arquivo dentro do disco "local" (storage/app).
      */
-    public function storePath(string $filename): string
+    public static function storePath(string $filename): string
     {
         return 'pdf-exports/'.$filename;
     }

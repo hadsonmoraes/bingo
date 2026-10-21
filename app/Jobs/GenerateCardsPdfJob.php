@@ -56,7 +56,7 @@ class GenerateCardsPdfJob implements ShouldQueue
         $prints->issue($game, $cards);
 
         $filename = 'cartelas-'.$game->id.'-'.now()->format('Ymd-His').'.zip';
-        $path = $this->export->storePath($filename);
+        $path = PdfExport::storePath($filename);
 
         Storage::disk('local')->makeDirectory(dirname($path));
 

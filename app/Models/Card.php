@@ -31,7 +31,6 @@ class Card extends Model
         'game_id',
         'code',
         'grid',
-        'holder',
         'status',
         'buyer_name',
         'buyer_phone',
@@ -102,7 +101,9 @@ class Card extends Model
      */
     public function effectiveBlocks(): Collection
     {
-        $blocks = $this->blocks()->orderBy('position')->get();
+        // Usa a relação carregada (eager load) quando disponível — a
+        // relação já vem ordenada por position.
+        $blocks = $this->blocks;
 
         if ($blocks->isNotEmpty()) {
             return $blocks;
@@ -125,15 +126,5 @@ class Card extends Model
         ]);
 
         return new Collection([$block]);
-    }
-
-    public function rowsCount(): int
-    {
-        return count($this->grid);
-    }
-
-    public function colsCount(): int
-    {
-        return count($this->grid[0] ?? []);
     }
 }

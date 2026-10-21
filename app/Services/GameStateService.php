@@ -5,14 +5,18 @@ namespace App\Services;
 use App\Models\Card;
 use App\Models\CardBlock;
 use App\Models\Game;
+use App\Models\Prize;
+use Illuminate\Support\Collection;
 
 class GameStateService
 {
     /**
      * Prêmios na ordem de disputa: do último (prêmios menores) para o
      * primeiro (prêmio principal). É a ordem usada pela disputa da rodada.
+     *
+     * @return Collection<int, Prize>
      */
-    public function prizeSequence(Game $game)
+    public function prizeSequence(Game $game): Collection
     {
         // reorder() limpa o orderBy padrão da relação (sort_order ASC)
         return $game->prizes()->reorder()->orderByDesc('sort_order')->orderByDesc('id')->get();
@@ -22,11 +26,33 @@ class GameStateService
      * Prêmio em disputa como model, respeitando o ponteiro manual
      * ("Avançar prêmio") e a sequência do último para o primeiro.
      */
-    public function currentPrize(Game $game)
+    public function currentPrize(Game $game): ?Prize
     {
-        $sequence = $this->prizeSequence($game);
-        $pointerId = $game->current_prize_id;
+        return $this->resolvePrizes($this->prizeSequence($game)->load('winner'), $game->current_prize_id)[0];
+    }
+
+    /**
+     * Próximo prêmio sem ganhador na sequência de disputa após o atual.
+     */
+    public function nextPrize(Game $game): ?Prize
+    {
+        return $this->resolvePrizes($this->prizeSequence($game)->load('winner'), $game->current_prize_id)[1];
+    }
+
+    /**
+     * Prêmio em disputa (atual) e o próximo sem ganhador na sequência,
+     * respeitando o ponteiro manual do jogo. Quando o trecho a partir do
+     * ponteiro já está todo ganho, recua para o primeiro prêmio ainda
+     * em disputa — a mesma regra usada pela tela do operador, pelo
+     * telão e pelo endpoint de polling.
+     *
+     * @param  Collection<int, Prize>  $sequence  com a relação "winner" carregada
+     * @return array{0: ?Prize, 1: ?Prize}
+     */
+    private function resolvePrizes(Collection $sequence, ?int $pointerId): array
+    {
         $started = $pointerId === null;
+        $current = null;
 
         foreach ($sequence as $prize) {
             if (! $started) {
@@ -36,35 +62,30 @@ class GameStateService
                 $started = true;
             }
 
-            if (! $prize->winner()->exists()) {
-                return $prize;
+            if ($prize->winner === null) {
+                $current = $prize;
+                break;
             }
         }
-
-        // Ponteiro no fim da sequência com prêmios seguintes já ganhos:
-        // recua para o primeiro prêmio ainda sem ganhador.
-        foreach ($sequence as $prize) {
-            if (! $prize->winner()->exists()) {
-                return $prize;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Próximo prêmio sem ganhador na sequência de disputa após o atual.
-     */
-    public function nextPrize(Game $game)
-    {
-        $current = $this->currentPrize($game);
 
         if ($current === null) {
-            return null;
+            // Ponteiro no fim da sequência com prêmios seguintes já
+            // ganhos: recua para o primeiro prêmio ainda sem ganhador.
+            foreach ($sequence as $prize) {
+                if ($prize->winner === null) {
+                    $current = $prize;
+                    break;
+                }
+            }
+        }
+
+        if ($current === null) {
+            return [null, null];
         }
 
         $reached = false;
-        foreach ($this->prizeSequence($game) as $prize) {
+        $next = null;
+        foreach ($sequence as $prize) {
             if (! $reached) {
                 if ($prize->id === $current->id) {
                     $reached = true;
@@ -73,12 +94,13 @@ class GameStateService
                 continue;
             }
 
-            if (! $prize->winner()->exists()) {
-                return $prize;
+            if ($prize->winner === null) {
+                $next = $prize;
+                break;
             }
         }
 
-        return null;
+        return [$current, $next];
     }
 
     /**
@@ -91,11 +113,13 @@ class GameStateService
         $drawnNumbers = $draws->pluck('number')->all();
         $last = $draws->last();
 
-        $sequence = $this->prizeSequence($game);
+        // Prêmios com os ganhadores carregados de uma vez (evita uma
+        // consulta por prêmio a cada polling do telão).
+        $sequence = $this->prizeSequence($game)->load('winner.card');
         $total = $sequence->count();
 
-        $prizes = $sequence->map(function ($prize, $index) use ($total) {
-            $winner = $prize->winner()->with('card')->first();
+        $prizes = $sequence->map(function (Prize $prize, int $index) use ($total) {
+            $winner = $prize->winner;
 
             return [
                 'id' => $prize->id,
@@ -115,45 +139,15 @@ class GameStateService
             ];
         })->all();
 
-        // Prêmio em disputa: primeiro sem ganhador na sequência (do último
-        // para o primeiro prêmio). O ponteiro manual do jogo ("Avançar
-        // prêmio") sobrepõe a sequência automática a partir dele.
-        $pointerIndex = null;
-        if ($game->current_prize_id !== null) {
-            foreach ($prizes as $index => $prize) {
-                if ($prize['id'] === $game->current_prize_id) {
-                    $pointerIndex = $index;
-                    break;
-                }
-            }
-        }
+        // Prêmio em disputa e o próximo: um único cálculo (o mesmo do
+        // "Avançar prêmio") respeita o ponteiro manual e a sequência
+        // automática do último para o primeiro prêmio.
+        [$currentModel, $nextModel] = $this->resolvePrizes($sequence, $game->current_prize_id);
 
-        $currentPrize = null;
-        $nextPrize = null;
-        for ($i = $pointerIndex ?? 0; $i < $total; $i++) {
-            if ($prizes[$i]['winner'] === null) {
-                $currentPrize = $prizes[$i];
+        $indexById = array_column($prizes, 'id');
 
-                for ($j = $i + 1; $j < $total; $j++) {
-                    if ($prizes[$j]['winner'] === null) {
-                        $nextPrize = $prizes[$j];
-                        break;
-                    }
-                }
-                break;
-            }
-        }
-
-        if ($currentPrize === null) {
-            // Ponteiro no fim da sequência com todos os prêmios seguintes
-            // já ganhos: recua para o primeiro prêmio ainda sem ganhador.
-            foreach ($prizes as $prize) {
-                if ($prize['winner'] === null) {
-                    $currentPrize = $prize;
-                    break;
-                }
-            }
-        }
+        $currentPrize = $currentModel ? $prizes[array_search($currentModel->id, $indexById)] : null;
+        $nextPrize = $nextModel ? $prizes[array_search($nextModel->id, $indexById)] : null;
 
         $winners = $game->winners()->with(['prize', 'card', 'block'])->get()->map(fn ($winner) => [
             'id' => $winner->id,

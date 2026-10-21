@@ -39,30 +39,25 @@ class PdfExportController extends Controller
         ]);
     }
 
-    public function download(Game $game, PdfExport $export): StreamedResponse
+    public function download(Game $game, PdfExport $pdfExport): StreamedResponse
     {
-        if ($export->game_id !== $game->id
-            || $export->status !== PdfExport::STATUS_COMPLETED
-            || ! $export->file_path
-            || ! Storage::disk('local')->exists($export->file_path)) {
-            abort(404, 'Arquivo de exportação não encontrado.');
-        }
+        abort_if(
+            $pdfExport->status !== PdfExport::STATUS_COMPLETED
+            || ! $pdfExport->file_path
+            || ! Storage::disk('local')->exists($pdfExport->file_path),
+            404,
+            'Arquivo de exportação não encontrado.',
+        );
 
-        return response()->streamDownload(function () use ($export) {
-            echo Storage::disk('local')->get($export->file_path);
-        }, $export->file_name ?? 'cartelas', [
-            'Content-Type' => Storage::disk('local')->mimeType($export->file_path),
-        ]);
+        // Storage::download faz o stream do arquivo sem carregá-lo
+        // inteiro na memória (ZIPs de centenas de cartelas).
+        return Storage::disk('local')->download($pdfExport->file_path, $pdfExport->file_name ?? 'cartelas');
     }
 
-    public function destroy(Request $request, Game $game, PdfExport $export)
+    public function destroy(Request $request, Game $game, PdfExport $pdfExport)
     {
-        if ($export->game_id !== $game->id) {
-            abort(404);
-        }
-
-        $export->deleteFile();
-        $export->delete();
+        $pdfExport->deleteFile();
+        $pdfExport->delete();
 
         return back()->with('success', 'Exportação de PDF removida.');
     }

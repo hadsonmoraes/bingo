@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StorePrizeRequest;
+use App\Http\Requests\UpdatePrizeRequest;
 use App\Models\Game;
 use App\Models\GameEvent;
 use App\Models\Prize;
@@ -18,19 +20,9 @@ class PrizeController extends Controller
         return view('prizes.index', ['game' => $game, 'prizes' => $prizes]);
     }
 
-    public function store(Request $request, Game $game)
+    public function store(StorePrizeRequest $request, Game $game)
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:120'],
-            'description' => ['nullable', 'string', 'max:500'],
-            'estimated_value' => ['nullable', 'string', 'max:60'],
-            'rule' => ['required', 'in:'.implode(',', array_keys(Prize::RULES))],
-            'pattern' => ['nullable', 'string'],
-            'image' => ['nullable', 'image', 'max:2048'],
-        ], [
-            'name.required' => 'Informe o nome do prêmio.',
-            'rule.required' => 'Selecione a regra de vitória.',
-        ]);
+        $validated = $request->validated();
 
         $pattern = $this->parsePattern($request, $game);
 
@@ -114,19 +106,9 @@ class PrizeController extends Controller
         return view('prizes.edit', ['game' => $game, 'prize' => $prize]);
     }
 
-    public function update(Request $request, Game $game, Prize $prize)
+    public function update(UpdatePrizeRequest $request, Game $game, Prize $prize)
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:120'],
-            'description' => ['nullable', 'string', 'max:500'],
-            'estimated_value' => ['nullable', 'string', 'max:60'],
-            'rule' => ['required', 'in:'.implode(',', array_keys(Prize::RULES))],
-            'pattern' => ['nullable', 'string'],
-            'image' => ['nullable', 'image', 'max:2048'],
-        ], [
-            'name.required' => 'Informe o nome do prêmio.',
-            'rule.required' => 'Selecione a regra de vitória.',
-        ]);
+        $validated = $request->validated();
 
         $pattern = $this->parsePattern($request, $game);
 
