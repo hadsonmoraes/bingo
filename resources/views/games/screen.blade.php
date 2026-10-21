@@ -11,7 +11,7 @@
 
     {{-- Banner: aguardando início --}}
     <div id="waiting-banner" class="hidden absolute inset-0 z-40 flex flex-col items-center justify-center bg-slate-950/95 text-center">
-        <p class="text-6xl font-black text-amber-400">BINGO</p>
+        <p class="text-6xl font-black text-amber-400">{{ $game->lettersWord() }}</p>
         <p class="mt-6 text-3xl font-bold">Aguardando o início da partida…</p>
         <p class="mt-3 text-xl text-slate-400">{{ $game->name }}</p>
     </div>

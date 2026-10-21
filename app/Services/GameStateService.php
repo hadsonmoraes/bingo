@@ -179,7 +179,7 @@ class GameStateService
                 'started_at' => $game->started_at?->format('d/m/Y H:i'),
                 'finished_at' => $game->finished_at?->format('d/m/Y H:i'),
             ],
-            'letters' => $game->use_letters ? Game::LETTERS : [],
+            'letters' => $game->letters(),
             'drawn' => $drawnNumbers,
             'total_numbers' => $game->totalNumbers(),
             'drawn_count' => count($drawnNumbers),

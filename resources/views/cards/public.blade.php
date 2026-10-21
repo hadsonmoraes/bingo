@@ -76,7 +76,7 @@
                 <table class="w-full table-fixed border-collapse">
                     @if ($useLetters)
                         <tr>
-                            @foreach (\App\Models\Game::LETTERS as $letter)
+                            @foreach ($game->letters() as $letter)
                                 <th class="border border-slate-800 py-1 text-sm font-black" style="background: {{ $theme }}; color: #020617;">{{ $letter }}</th>
                             @endforeach
                         </tr>

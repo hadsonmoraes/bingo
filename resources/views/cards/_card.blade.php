@@ -78,7 +78,7 @@
                 <table class="card-grid">
                     @if ($useLetters)
                         <tr>
-                            @foreach (['B','I','N','G','O'] as $letter)
+                            @foreach ($game->letters() as $letter)
                                 <th style="background: {{ $theme[0] }};">{{ $letter }}</th>
                             @endforeach
                         </tr>

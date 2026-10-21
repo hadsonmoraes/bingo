@@ -45,6 +45,13 @@
                     @endforeach
                 </select>
             </div>
+            <div>
+                <label for="letters_word" class="block text-sm font-semibold text-slate-700">Palavra do painel e das cartelas</label>
+                <input id="letters_word" type="text" name="letters_word" value="{{ old('letters_word', $game->letters_word) }}" maxlength="10"
+                       placeholder="BINGO" class="mt-1 w-full rounded-xl border-slate-300 uppercase focus:border-amber-500 focus:ring-amber-500">
+                <p class="mt-1 text-xs text-slate-500">Tema com exatamente 5 letras (ex.: FESTA) — substitui o "BINGO" no painel de números e nas cartelas. Vazio mantém BINGO.</p>
+                @error('letters_word')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+            </div>
         </div>
 
         <div>

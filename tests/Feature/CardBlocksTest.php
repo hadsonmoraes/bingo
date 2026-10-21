@@ -68,7 +68,7 @@ class CardBlocksTest extends TestCase
         $html = $response->content();
 
         // A área de prêmios existe e lista todos os prêmios
-        $this->assertStringContainsString('PRÊMIOS DO BINGO', $html);
+        $this->assertStringContainsString('PRÊMIOS DA AÇÃO ENTRE AMIGOS', $html);
         foreach (range(1, 3) as $i) {
             $this->assertStringContainsString("Prêmio {$i}", $html);
         }

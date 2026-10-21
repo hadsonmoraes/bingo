@@ -77,7 +77,7 @@
             <table style="width: {{ $area['w'] }}mm; border-collapse: collapse; table-layout: fixed;">
                 @if ($useLetters)
                     <tr>
-                        @foreach (['B','I','N','G','O'] as $letter)
+                        @foreach ($card->game->letters() as $letter)
                             <th style="border: 0.4mm solid #334155; background: #334155; color: #ffffff;
                                       font-size: {{ round($area['h'] * $ptPerMm * 0.07, 1) }}pt;
                                       padding: 0.6mm 0; width: {{ round($area['w'] / 5, 2) }}mm;">{{ $letter }}</th>

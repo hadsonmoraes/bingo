@@ -38,9 +38,11 @@ class GameController extends Controller
             'number_min' => ['required', 'integer', 'min:1', 'max:200'],
             'number_max' => ['required', 'integer', 'gt:number_min', 'max:200'],
             'use_letters' => ['nullable', 'boolean'],
+            'letters_word' => ['nullable', 'string', 'max:10', 'regex:/^[\pL]{5}$/u'],
         ], [
             'name.required' => 'Informe o nome da partida.',
             'number_max.gt' => 'O número máximo deve ser maior que o mínimo.',
+            'letters_word.regex' => 'A palavra do tema deve ter exatamente 5 letras (sem números ou símbolos).',
         ]);
 
         $format = $validated['card_format'];
@@ -60,8 +62,11 @@ class GameController extends Controller
             }
         }
 
-        $game = Game::create($validated + ['status' => Game::STATUS_SETUP]);
+        if (isset($validated['letters_word'])) {
+            $validated['letters_word'] = mb_strtoupper($validated['letters_word']);
+        }
 
+        $game = Game::create($validated + ['status' => Game::STATUS_SETUP]);
         if ($request->hasFile('logo')) {
             $game->update(['logo_path' => $request->file('logo')->store('logos', 'public')]);
         }
@@ -83,6 +88,9 @@ class GameController extends Controller
             'card_price' => ['nullable', 'numeric', 'min:0'],
             'theme_color' => ['nullable', 'in:'.implode(',', array_keys(Game::THEME_COLORS))],
             'logo' => ['nullable', 'image', 'max:2048'],
+            'letters_word' => ['nullable', 'string', 'max:10', 'regex:/^[\pL]{5}$/u'],
+        ], [
+            'letters_word.regex' => 'A palavra do tema deve ter exatamente 5 letras (sem números ou símbolos).',
         ]);
 
         if ($request->boolean('remove_logo')) {
@@ -95,6 +103,10 @@ class GameController extends Controller
                 Storage::disk('public')->delete($game->logo_path);
             }
             $validated['logo_path'] = $request->file('logo')->store('logos', 'public');
+        }
+
+        if (isset($validated['letters_word'])) {
+            $validated['letters_word'] = mb_strtoupper($validated['letters_word']);
         }
 
         $game->update($validated);

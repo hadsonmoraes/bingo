@@ -67,7 +67,7 @@
 
                 @php $gy = $by + $captionH; @endphp
                 @if ($useLetters)
-                    @foreach (['B','I','N','G','O'] as $c => $letter)
+                    @foreach ($game->letters() as $c => $letter)
                         <rect x="{{ $bx + $c * ($blockW / 5) }}" y="{{ $gy }}" width="{{ $blockW / 5 }}" height="{{ $lettersH }}" fill="#b45309" stroke="#0f172a" stroke-width="0.3"/>
                         <text x="{{ $bx + $c * ($blockW / 5) + $blockW / 10 }}" y="{{ $gy + $lettersH * 0.75 }}" text-anchor="middle" font-size="{{ $cell * 0.6 }}" font-weight="bold" fill="#ffffff">{{ $letter }}</text>
                     @endforeach

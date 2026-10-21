@@ -10,7 +10,7 @@
                 @if ($game->event_date){{ $game->event_date->format('d/m/Y') }} · @endif
                 @if ($game->card_price)Cartela R$ {{ number_format((float) $game->card_price, 2, ',', '.') }} · @endif
                 @if ($game->card_format === '75')
-                    75 bolas · B-I-N-G-O · cartela 5×5
+                    75 bolas · {{ $game->use_letters ? implode('-', $game->letters()) : 'B-I-N-G-O' }} · cartela 5×5
                 @elseif ($game->card_format === '90')
                     90 bolas · cartela 3×9
                 @else

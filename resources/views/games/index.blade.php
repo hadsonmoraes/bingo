@@ -33,7 +33,7 @@
                         </td>
                         <td class="px-4 py-3">
                             @if ($game->card_format === '75')
-                                <span class="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-700">75 bolas (B-I-N-G-O)</span>
+                                <span class="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-700">75 bolas ({{ $game->use_letters ? implode('-', $game->letters()) : 'B-I-N-G-O' }})</span>
                             @elseif ($game->card_format === '90')
                                 <span class="rounded-full bg-purple-100 px-2 py-0.5 text-xs font-semibold text-purple-700">90 bolas</span>
                             @else
