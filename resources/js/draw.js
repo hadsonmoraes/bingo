@@ -31,6 +31,9 @@ const winnerNameInput = document.getElementById('winner-name');
 const validateBtn = document.getElementById('validate-btn');
 const winnersList = document.getElementById('winners-list');
 const currentPrizeName = document.getElementById('current-prize-name');
+const checkCardInput = document.getElementById('check-card');
+const checkBtn = document.getElementById('check-btn');
+const checkResult = document.getElementById('check-result');
 const soundToggle = document.getElementById('sound-toggle');
 const prizeBadge = document.getElementById('prize-badge');
 const prizeBadgeName = document.getElementById('prize-badge-name');
@@ -510,5 +513,55 @@ setInterval(async () => {
         if (response.ok) render(await response.json());
     } catch (e) { /* offline momentâneo — mantém o estado atual */ }
 }, 5000);
+
+// --- Conferir cartela (canhoto) ---
+checkBtn?.addEventListener('click', async () => {
+    const code = checkCardInput.value.trim();
+    if (!code) return showAlert('Informe ou escaneie o código da cartela.', 'error');
+    showAlert('', 'none');
+    const r = await postJson(`/games/${gameId}/cards/check`, { code });
+    if (!r.ok) return showAlert(data.message || 'Erro ao conferir.', 'error');
+    const c = r.data.card;
+    const sold = c.sold;
+    checkResult.classList.remove('hidden');
+    if (sold) {
+        checkResult.innerHTML = `<span class="text-emerald-600 font-bold">Cartela ${c.code} vendida para ${c.buyer_name || ''} ${c.buyer_phone ? '(' + c.buyer_phone + ')' : ''}</span>`;
+        checkResult.classList.add('text-emerald-600');
+        // Fill card code into the winner validation input
+        cardCodeInput.value = c.code;
+    } else {
+        checkResult.innerHTML = `<span class="text-amber-600 font-bold">Cartela ${c.code} em jogo — sem comprador registrado</span>`;
+        checkResult.classList.add('text-amber-600');
+        // Show quick sell form
+        checkResult.innerHTML += `
+            <div class="mt-1">
+                <input id="quick-sell-name" type="text"
+                    placeholder="Nome do comprador (opcional)"
+                    class="w-full rounded-xl border-slate-300 py-1.5 text-sm focus:border-amber-500 focus:ring-amber-500">
+                <button id="quick-sell-btn" class="mt-2 rounded-xl bg-emerald-600 px-3 py-1.5 text-sm font-bold text-white hover:bg-emerald-500">
+                    Registrar venda
+                </button>
+            </div>`;
+        document.getElementById('quick-sell-btn')?.addEventListener('click', async () => {
+            const name = document.getElementById('quick-sell-name').value.trim();
+            if (!name) return showAlert('Informe o nome do comprador.', 'error');
+            const sr = await postJson(`/games/${gameId}/cards/${c.id}/buyer`, { buyer_name: name });
+            if (sr.ok) {
+                showAlert('Venda registrada com sucesso.', 'success');
+                checkResult.innerHTML = `<span class="text-emerald-600 font-bold">Cartela ${c.code} vendida para ${name}</span>`;
+                checkResult.classList.add('text-emerald-600');
+                cardCodeInput.value = c.code;
+                // remove quick sell form
+                const extra = checkResult.querySelector('.mt-1');
+                extra && extra.remove();
+            } else {
+                showAlert(sr.data?.message || 'Erro ao registrar venda.', 'error');
+            }
+        });
+    }
+    if (!sold) {
+        checkResult.innerHTML += `<div class="mt-1 text-slate-500 text-xs">(Comprador não cadastrado = cartela ainda em jogo)</div>`;
+    }
+});
 
 render(state);

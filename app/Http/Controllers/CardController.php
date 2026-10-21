@@ -121,6 +121,20 @@ class CardController extends Controller
             'data' => ['card_code' => $card->code, 'buyer_name' => $card->buyer_name, 'buyer_phone' => $card->buyer_phone],
         ]);
 
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => 'Comprador da cartela '.$card->code.' atualizado.',
+                'type' => 'success',
+                'card' => [
+                    'code' => $card->code,
+                    'status' => $card->statusLabel(),
+                    'sold' => ($status === Card::STATUS_SOLD),
+                    'buyer_name' => $card->buyer_name,
+                    'buyer_phone' => $card->buyer_phone,
+                ],
+            ]);
+        }
+
         return back()->with('success', 'Comprador da cartela '.$card->code.' atualizado.');
     }
 
@@ -214,5 +228,39 @@ class CardController extends Controller
     public function artModelBase(Game $game, ArtExportService $art)
     {
         return $art->svgModelBase($game);
+    }
+
+    /**
+     * Consulta o status de uma cartela a partir do seu código.
+     * Aceita o código puro (C-0001), o conteúdo do código de barras
+     * impresso no canhoto ou a URL completa do QR Code.
+     */
+    public function check(Request $request, Game $game)
+    {
+        $validated = $request->validate(['code' => ['required', 'string', 'max:255']]);
+        $card = $game->cards()->where('code', Card::normalizeCodeInput($validated['code']))->first();
+
+        if (! $card) {
+            return response()->json(['message' => 'Cartela não encontrada nesta partida.', 'type' => 'error'], 404);
+        }
+
+        $sold = (bool) ($card->buyer_name || $card->buyer_phone);
+
+        return response()->json([
+            'card' => [
+                'id' => $card->id,
+                'code' => $card->code,
+                'status' => $card->statusLabel(),
+                'sold' => $sold,
+                'buyer_name' => $card->buyer_name,
+                'buyer_phone' => $card->buyer_phone,
+                'status_color' => $sold ? 'emerald' : ($card->status === Card::STATUS_IN_PLAY ? 'amber' : 'red'),
+            ],
+        ]);
+    }
+
+    public function test(Game $game)
+    {
+        return view('test.check');
     }
 }

@@ -3,6 +3,7 @@
 
 @section('content')
     <div id="state-data" hidden>{{ json_encode($state) }}</div>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <div class="flex flex-wrap items-center justify-between gap-2">
         <div>
@@ -79,6 +80,18 @@
                 <label class="mt-3 block text-xs font-semibold text-slate-700">
                     Painel de números — clique na pedra sorteada
                 </label>
+                <div class="mt-2 rounded-xl bg-slate-50 border border-slate-200 p-2">
+                    <div class="flex gap-1.5">
+                        <input id="check-card" type="text" placeholder="Conferir cartela: escaneie o canhoto ou digite o código"
+                            class="flex-1 rounded-xl border-slate-300 py-1.5 text-sm font-mono uppercase focus:border-amber-500 focus:ring-amber-500">
+                        <button id="check-btn" type="button"
+                            class="rounded-xl bg-amber-600 px-3 py-1.5 text-sm font-bold text-white hover:bg-amber-500"
+                            title="Conferir a cartela">
+                            Conferir
+                        </button>
+                    </div>
+                    <div id="check-result" class="mt-2 hidden text-sm"></div>
+                </div>
                 <div id="keypad" class="mt-2 w-full"></div>
 
                 <div class="mt-2">

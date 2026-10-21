@@ -104,7 +104,15 @@
                 <div class="card-stub__body" style="border-color: {{ $theme[0] }};">
                     <p class="card-stub__title" style="color: {{ $theme[0] }};">{{ $game->organization_name ?? 'AÇÃO ENTRE AMIGOS' }}</p>
                     <p class="card-stub__event">{{ $game->name }} · Cartela <strong>{{ $card->code }}</strong></p>
-                    <p class="card-stub__fields">Nome: ______________________________ Telefone: ______________</p>
+                    <div class="card-stub__row">
+                        <p class="card-stub__fields">Nome: ______________________________ Telefone: ______________</p>
+                        @if ($barcodes[$card->id] ?? null)
+                            <div class="card-stub__barcode" title="Código de barras da cartela {{ $card->code }}">
+                                <img src="{{ $barcodes[$card->id] }}" alt="Código de barras da cartela {{ $card->code }}">
+                                <p class="card-stub__barcode-code">{{ $card->code }}</p>
+                            </div>
+                        @endif
+                    </div>
                 </div>
             </div>
             <div class="card-buyer card-buyer--compact">

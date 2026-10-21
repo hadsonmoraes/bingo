@@ -103,6 +103,10 @@
         .card-stub__title { font-weight: 900; text-transform: uppercase; letter-spacing: 1px; font-size: 9px; }
         .card-stub__event { font-weight: 700; }
         .card-stub__fields { margin-top: 1.5mm; }
+        .card-stub__row { display: flex; align-items: flex-end; justify-content: space-between; gap: 3mm; margin-top: 1.5mm; }
+        .card-stub__barcode { text-align: center; flex-shrink: 0; }
+        .card-stub__barcode img { width: 30mm; height: 7.5mm; }
+        .card-stub__barcode-code { font-family: 'Courier New', monospace; font-weight: 800; font-size: 9px; letter-spacing: 2px; margin-top: 0.5mm; }
 
         .card-price { margin: 0; padding: 1.5mm 4mm; color: #fff; font-size: 11px; font-weight: 800; text-align: center; }
 

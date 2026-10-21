@@ -55,7 +55,10 @@ Route::scopeBindings()->group(function () {
     Route::post('/games/{game}/cards/generate', [CardController::class, 'generate'])->name('games.cards.generate');
     Route::get('/games/{game}/cards/generation-status', [CardController::class, 'generationStatus'])->name('games.cards.generation-status');
     Route::post('/games/{game}/cards/{card}/buyer', [CardController::class, 'storeBuyer'])->name('games.cards.buyer');
+    Route::post('/games/{game}/cards/check', [CardController::class, 'check'])->name('games.cards.check');
     Route::post('/games/{game}/cards/{card}/cancel', [CardController::class, 'cancel'])->name('games.cards.cancel');
+    Route::get('/games/{game}/test', [CardController::class, 'test'])->name('games.test');
+    Route::post('/games/{game}/test/check', [CardController::class, 'check'])->name('games.test.check');
     Route::get('/games/{game}/cards/print', [CardController::class, 'print'])->name('games.cards.print');
     Route::get('/games/{game}/cards/pdf', [CardController::class, 'pdf'])->name('games.cards.pdf');
 

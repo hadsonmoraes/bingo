@@ -65,6 +65,12 @@
         .stub-cut { text-align: center; font-size: 8pt; color: #64748b; margin: 0; }
         .stub { margin: 1.5mm 2mm 2mm; border: 1.5px solid #0f172a; border-radius: 4px; padding: 1.5mm 2.5mm; font-size: 8.5pt; }
         .stub p { margin: 0.5mm 0; }
+        .stub-row { width: 100%; border-collapse: collapse; margin: 0.5mm 0 0; }
+        .stub-row td { border: 0; padding: 0; vertical-align: bottom; }
+        .stub-fields { font-size: 8.5pt; }
+        .stub-barcode { text-align: right; white-space: nowrap; }
+        .stub-barcode img.barcode { width: 30mm; height: 7.5mm; margin: 0; }
+        .stub-barcode p.barcode-code { font-family: 'Courier New', monospace; font-size: 8pt; font-weight: bold; letter-spacing: 2px; margin: 0.3mm 0 0; }
         .price { margin: 0; padding: 1.5mm 3mm; color: #ffffff; font-size: 9pt; font-weight: bold; text-align: center; background-color: {{ $theme[0] }}; }
 
         .scale-big table.grid td { font-size: 30pt; padding: 8mm 0; }

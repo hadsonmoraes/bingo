@@ -119,6 +119,7 @@ class CardPrintService
             'qrCodes' => $showQr
                 ? app(QrCodeService::class)->cardsDataUri($game, $cards, $baseUrl)
                 : [],
+            'barcodes' => app(BarcodeService::class)->cardsDataUri($cards),
             'perPage' => $blocksCount > 1
                 ? 1
                 : (in_array((int) ($query['per_page'] ?? null), [1, 2, 4], true) ? (int) $query['per_page'] : 2),

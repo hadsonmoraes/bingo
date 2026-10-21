@@ -97,7 +97,17 @@
             <div class="stub">
                 <p><strong style="color: {{ $theme[0] }};">{{ $game->organization_name ?? 'AÇÃO ENTRE AMIGOS' }}</strong></p>
                 <p>{{ $game->name }} · Cartela <strong>{{ $card->code }}</strong></p>
-                <p>Nome: ______________________________ Telefone: ______________</p>
+                @if ($barcodes[$card->id] ?? null)
+                    <table class="stub-row"><tr>
+                        <td class="stub-fields">Nome: ______________________________ Telefone: ______________</td>
+                        <td class="stub-barcode">
+                            <img class="barcode" src="{{ $barcodes[$card->id] }}" alt="Código de barras da cartela {{ $card->code }}">
+                            <p class="barcode-code">{{ $card->code }}</p>
+                        </td>
+                    </tr></table>
+                @else
+                    <p>Nome: ______________________________ Telefone: ______________</p>
+                @endif
             </div>
             <div class="buyer">
                 <p>Nome do comprador: ________________________________ Telefone: ______________ Assinatura: ____________</p>

@@ -55,6 +55,23 @@ class Card extends Model
     }
 
     /**
+     * Normaliza a entrada usada para localizar uma cartela: aceita o
+     * código puro (C-0001), o conteúdo do código de barras do canhoto
+     * ou a URL completa do QR Code impresso.
+     */
+    public static function normalizeCodeInput(string $input): string
+    {
+        $code = trim($input);
+
+        if (str_contains($code, '/')) {
+            $path = parse_url($code, PHP_URL_PATH) ?: $code;
+            $code = substr($path, (int) strrpos($path, '/') + 1);
+        }
+
+        return strtoupper(rawurldecode(trim($code)));
+    }
+
+    /**
      * Prêmios exibidos na cartela impressa: usa o snapshot capturado na
      * emissão, garantindo que cartelas já emitidas nunca mudem em silêncio.
      */

@@ -27,7 +27,7 @@ class WinnerController extends Controller
     {
         $validated = $request->validated();
 
-        $card = $game->cards()->where('code', $this->normalizeCardCode($validated['card_code']))->first();
+        $card = $game->cards()->where('code', Card::normalizeCodeInput($validated['card_code']))->first();
         if (! $card) {
             return $this->error($request, $game, 'Cartela não encontrada nesta partida.');
         }
@@ -206,14 +206,7 @@ class WinnerController extends Controller
      */
     private function normalizeCardCode(string $input): string
     {
-        $code = trim($input);
-
-        if (str_contains($code, '/')) {
-            $path = parse_url($code, PHP_URL_PATH) ?: $code;
-            $code = substr($path, (int) strrpos($path, '/') + 1);
-        }
-
-        return strtoupper(rawurldecode(trim($code)));
+        return Card::normalizeCodeInput($input);
     }
 
     private function error(Request $request, Game $game, string $message)
