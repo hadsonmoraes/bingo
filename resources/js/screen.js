@@ -55,9 +55,9 @@ function render(st) {
     if (state.winners.length > lastSeenWinnerCount) {
         const winner = state.winners[state.winners.length - 1];
         winnerMessage.innerHTML = `
-            <p class="text-2xl font-black uppercase tracking-widest text-amber-300">🏆 Temos um ganhador!</p>
-            <p class="mt-3 text-5xl font-black">${winner.prize_name}</p>
-            <p class="mt-4 text-3xl font-bold text-white">Cartela ${winner.card_code}${winner.winner_name ? ' — ' + winner.winner_name : ''}</p>
+            <p class="text-xl font-black uppercase tracking-widest text-amber-300 sm:text-2xl">🏆 Temos um ganhador!</p>
+            <p class="mt-3 text-3xl font-black sm:text-5xl">${winner.prize_name}</p>
+            <p class="mt-4 text-xl font-bold text-white sm:text-3xl">Cartela ${winner.card_code}${winner.winner_name ? ' — ' + winner.winner_name : ''}</p>
         `;
         winnerOverlay.classList.remove('hidden');
         playWinnerFanfare();

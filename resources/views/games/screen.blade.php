@@ -6,7 +6,7 @@
     <title>{{ $game->name }} — Bingo (tela pública)</title>
     @vite(['resources/css/app.css', 'resources/js/screen.js'])
 </head>
-<body class="h-screen overflow-hidden bg-slate-950 text-white">
+<body class="min-h-screen bg-slate-950 text-white">
     <div id="state-data" hidden>{{ json_encode($state) }}</div>
 
     {{-- Banner: aguardando início --}}
@@ -27,40 +27,40 @@
         <div id="winner-message" class="px-8"></div>
     </div>
 
-    <div class="flex h-full flex-col gap-4 p-6">
+    <div class="flex flex-col gap-4 p-4 sm:p-6">
         {{-- Cabeçalho --}}
-        <div class="flex items-center justify-between">
-            <div class="flex items-baseline gap-4">
-                <h1 id="game-name" class="text-3xl font-black">{{ $game->name }}</h1>
-                <span class="rounded-full bg-amber-500 px-4 py-1 text-xl font-black text-slate-900">
+        <div class="flex flex-wrap items-center justify-between gap-2 sm:gap-4">
+            <div class="flex flex-wrap items-baseline gap-2 sm:gap-4">
+                <h1 id="game-name" class="text-xl font-black sm:text-3xl">{{ $game->name }}</h1>
+                <span class="rounded-full bg-amber-500 px-3 py-1 text-sm font-black text-slate-900 sm:px-4 sm:text-xl">
                     Restam <span id="remaining-count">{{ $state['remaining_count'] }}</span>
                 </span>
-                <span id="na-boa-badge" class="rounded-full bg-emerald-600 px-4 py-1 text-xl font-black text-white">
+                <span id="na-boa-badge" class="rounded-full bg-emerald-600 px-3 py-1 text-sm font-black text-white sm:px-4 sm:text-xl">
                     <span id="na-boa-count">{{ $state['cards_summary']['na_boa'] ?? 0 }}</span> na boa
                 </span>
             </div>
-            <div class="text-right">
-                <p class="text-sm font-semibold uppercase tracking-widest text-slate-400">Prêmio em disputa</p>
-                <p id="prize-name" class="text-2xl font-black text-amber-400">—</p>
-                <p id="prize-rule" class="text-base font-semibold text-slate-300">—</p>
-                <p id="prize-position" class="text-sm font-semibold text-slate-400">—</p>
+            <div class="text-left sm:text-right">
+                <p class="text-xs font-semibold uppercase tracking-widest text-slate-400 sm:text-sm">Prêmio em disputa</p>
+                <p id="prize-name" class="text-lg font-black text-amber-400 sm:text-2xl">—</p>
+                <p id="prize-rule" class="text-sm font-semibold text-slate-300 sm:text-base">—</p>
+                <p id="prize-position" class="text-xs font-semibold text-slate-400 sm:text-sm">—</p>
             </div>
         </div>
 
         {{-- Última pedra + histórico --}}
-        <div class="flex items-center gap-8">
-            <div class="flex h-64 w-80 shrink-0 flex-col items-center justify-center rounded-3xl bg-white shadow-2xl">
-                <span id="last-letter" class="text-8xl font-black leading-none text-amber-500"></span>
-                <span id="last-number" class="text-9xl font-black leading-none text-slate-900">--</span>
+        <div class="flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:gap-8">
+            <div class="flex h-36 w-full shrink-0 flex-col items-center justify-center rounded-3xl bg-white shadow-2xl sm:h-64 sm:w-80">
+                <span id="last-letter" class="text-6xl font-black leading-none text-amber-500 sm:text-8xl"></span>
+                <span id="last-number" class="text-7xl font-black leading-none text-slate-900 sm:text-9xl">--</span>
             </div>
             <div class="min-w-0 flex-1">
-                <p class="mb-2 text-sm font-bold uppercase tracking-widest text-slate-400">Pedras anteriores</p>
-                <div id="history" class="flex max-h-56 flex-wrap gap-2 overflow-y-auto"></div>
+                <p class="mb-2 text-xs font-bold uppercase tracking-widest text-slate-400 sm:text-sm">Pedras anteriores</p>
+                <div id="history" class="flex max-h-40 flex-wrap gap-2 overflow-y-auto sm:max-h-56"></div>
             </div>
         </div>
 
         {{-- Painel de números --}}
-        <div class="min-h-0 flex-1 rounded-3xl bg-slate-900 p-5 ring-1 ring-white/10">
+        <div class="min-h-0 flex-1 rounded-3xl bg-slate-900 p-3 ring-1 ring-white/10 max-sm:min-h-[60vh] sm:p-5">
             <div id="board" class="h-full"></div>
         </div>
     </div>

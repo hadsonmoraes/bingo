@@ -56,9 +56,9 @@
                         </button>
                     </div>
                 </div>
-                <div class="grid grid-cols-4 gap-2">
+                <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
                     <div id="last-display"
-                        class="mt-2 flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 py-2">
+                        class="col-span-2 mt-2 flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 py-2 sm:col-span-1">
                         <span id="last-letter" class="text-2xl font-black text-amber-400">—</span>
                         <span id="last-number" class="text-3xl font-black leading-none text-white">--</span>
                     </div>
@@ -71,7 +71,7 @@
                         <p class="text-[10px] font-semibold uppercase text-slate-500">Restantes</p>
                         <p id="remaining-count" class="text-xl font-black text-slate-900">0</p>
                     </div>
-                    <div class="rounded-xl bg-white p-2 text-center shadow-sm mt-2 border border-slate-200">
+                    <div class="col-span-2 rounded-xl bg-white p-2 text-center shadow-sm mt-2 border border-slate-200 sm:col-span-1">
                         <p class="text-[10px] font-semibold uppercase text-slate-500">Possíveis</p>
                         <p class="text-xl font-black text-slate-900">{{ $state['total_numbers'] }}</p>
                     </div>
