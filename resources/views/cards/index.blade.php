@@ -38,6 +38,21 @@
         <ul id="pdf-exports-list" class="mt-2 divide-y divide-slate-100"></ul>
     </div>
 
+    {{-- Geração de lotes grandes de cartelas pela fila --}}
+    @session('generating_batch')
+        <div id="cards-generation-panel" class="mt-4 rounded-2xl border border-amber-300 bg-amber-50 p-5 shadow"
+             data-poll-url="{{ route('games.cards.generation-status', $game) }}"
+             data-batch="{{ session('generating_batch') }}"
+             data-quantity="{{ session('generating_quantity') }}">
+            <h2 class="text-sm font-bold text-amber-900">Gerando lote {{ session('generating_batch') }} em segundo plano</h2>
+            <p class="mt-0.5 text-xs text-amber-800">
+                {{ session('generating_quantity') }} cartelas estão sendo geradas pela fila, sem travar o servidor.
+                A lista é recarregada automaticamente quando o lote fica pronto.
+            </p>
+            <p id="cards-generation-progress" class="mt-2 text-sm font-semibold text-amber-700">Preparando…</p>
+        </div>
+    @endsession
+
     <div class="mt-6 grid gap-6 lg:grid-cols-[380px_1fr]">
         <div class="h-fit space-y-6">
             <form method="POST" action="{{ route('games.cards.generate', $game) }}" class="rounded-2xl bg-white p-6 shadow">

@@ -1,5 +1,4 @@
-// Exportações de PDF em fila — painel na página de cartelas.
-// Lotes grandes são gerados fora da requisição HTTP; o painel acompanha
+// Exportações de PDF em fila — painel na página de cartelas.// Lotes grandes são gerados fora da requisição HTTP; o painel acompanha
 // o andamento via polling e só continua atualizando enquanto houver
 // exportações pendentes.
 
@@ -73,3 +72,37 @@ pdfExportsPanel?.addEventListener('click', (event) => {
 });
 
 pollPdfExports(pdfExportsPanel?.dataset.pollUrl, true);
+
+// Geração de lotes grandes de cartelas pela fila — acompanha o lote
+// até a última cartela e recarrega a lista quando termina.
+const cardsGenerationPanel = document.getElementById('cards-generation-panel');
+
+async function pollCardsGeneration() {
+    if (!cardsGenerationPanel) {
+        return;
+    }
+
+    const { pollUrl, batch, quantity } = cardsGenerationPanel.dataset;
+    const total = Number(quantity);
+
+    try {
+        const response = await fetch(`${pollUrl}?batch=${batch}`, { headers: { Accept: 'application/json' } });
+        if (response.ok) {
+            const { generated } = await response.json();
+            const progress = document.getElementById('cards-generation-progress');
+
+            progress.textContent = `${generated} de ${total} cartela(s) gerada(s)…`;
+
+            if (generated >= total) {
+                progress.textContent = `Lote ${batch} concluído: ${total} cartela(s) gerada(s).`;
+                setTimeout(() => window.location.reload(), 800);
+
+                return;
+            }
+        }
+    } catch (e) { /* mantém o último estado conhecido */ }
+
+    setTimeout(pollCardsGeneration, 2000);
+}
+
+pollCardsGeneration();

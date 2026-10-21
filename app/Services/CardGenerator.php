@@ -10,6 +10,11 @@ use Illuminate\Support\Facades\DB;
 class CardGenerator
 {
     /**
+     * Acima deste total a geração sai da requisição HTTP e vai para a fila.
+     */
+    public const INLINE_MAX_GENERATE = 50;
+
+    /**
      * Gera uma nova cartela para a partida e retorna o model persistido.
      * Para cada prêmio cadastrado no evento é criado um bloco numérico
      * independente, válido e identificado — 1 prêmio = 1 bloco.

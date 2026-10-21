@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\GenerateCardsJob;
 use App\Jobs\GenerateCardsPdfJob;
 use App\Models\Card;
 use App\Models\Game;
@@ -52,6 +53,9 @@ class CardController extends Controller
     /**
      * Gera um novo lote de cartelas com códigos únicos e grades
      * válidas, sem duplicar integralmente cartelas já existentes.
+     * Lotes grandes (acima do limite síncrono) vão para a fila: a
+     * verificação de duplicidade tem custo quadrático e travaria a
+     * requisição HTTP com centenas de cartelas.
      */
     public function generate(Request $request, Game $game)
     {
@@ -62,14 +66,38 @@ class CardController extends Controller
             'quantity.max' => 'Gere no máximo 500 cartelas por vez.',
         ]);
 
-        $generator = app(CardGenerator::class);
+        $quantity = (int) $validated['quantity'];
         $batch = ((int) $game->cards()->max('batch')) + 1;
 
-        for ($i = 0; $i < $validated['quantity']; $i++) {
+        if ($quantity > CardGenerator::INLINE_MAX_GENERATE) {
+            GenerateCardsJob::dispatch($game, $quantity, $batch);
+
+            return back()
+                ->with('success', "Lote {$batch} com {$quantity} cartelas está sendo gerado em segundo plano (fila). Acompanhe o andamento abaixo — as cartelas aparecem na lista assim que ficam prontas.")
+                ->with('generating_batch', $batch)
+                ->with('generating_quantity', $quantity);
+        }
+
+        $generator = app(CardGenerator::class);
+
+        for ($i = 0; $i < $quantity; $i++) {
             $generator->createCard($game, batch: $batch);
         }
 
-        return back()->with('success', $validated['quantity'].' cartela(s) gerada(s) no lote '.$batch.'.');
+        return back()->with('success', $quantity.' cartela(s) gerada(s) no lote '.$batch.'.');
+    }
+
+    /**
+     * Progresso de um lote grande gerado pela fila — usado pelo polling
+     * da página de cartelas.
+     */
+    public function generationStatus(Request $request, Game $game)
+    {
+        $batch = (int) $request->query('batch', 0);
+
+        return response()->json([
+            'generated' => $game->cards()->where('batch', $batch)->count(),
+        ]);
     }
 
     /**

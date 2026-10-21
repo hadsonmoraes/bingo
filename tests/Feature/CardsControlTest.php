@@ -2,11 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\GenerateCardsJob;
 use App\Models\Card;
 use App\Models\Game;
 use App\Models\Prize;
 use App\Services\CardGenerator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -50,6 +52,45 @@ class CardsControlTest extends TestCase
         // Segundo lote incrementa
         $this->post("/games/{$this->game->id}/cards/generate", ['quantity' => 3]);
         $this->assertSame(3, $this->game->cards()->where('batch', 2)->count());
+    }
+
+    public function test_large_generations_go_to_the_queue(): void
+    {
+        Queue::fake();
+
+        $this->post("/games/{$this->game->id}/cards/generate", ['quantity' => 500])
+            ->assertRedirect()
+            ->assertSessionHas('generating_batch', 1)
+            ->assertSessionHas('generating_quantity', 500);
+
+        Queue::assertPushed(GenerateCardsJob::class, fn ($job) => $job->quantity === 500 && $job->batch === 1);
+
+        // Nada é gerado dentro da requisição HTTP
+        $this->assertSame(0, $this->game->cards()->count());
+    }
+
+    public function test_queue_job_generates_all_cards_in_batch(): void
+    {
+        (new GenerateCardsJob($this->game, 3, 7))->handle(app(CardGenerator::class));
+
+        $cards = $this->game->cards()->where('batch', 7)->orderBy('code')->get();
+
+        $this->assertCount(3, $cards);
+        $this->assertSame($cards->pluck('code')->unique()->count(), 3);
+        $this->assertSame(Card::STATUS_AVAILABLE, $cards->first()->status);
+    }
+
+    public function test_generation_status_counts_cards_of_the_batch(): void
+    {
+        $generator = app(CardGenerator::class);
+        for ($i = 0; $i < 2; $i++) {
+            $generator->createCard($this->game, batch: 4);
+        }
+        $generator->createCard($this->game, batch: 5);
+
+        $this->getJson("/games/{$this->game->id}/cards/generation-status?batch=4")
+            ->assertOk()
+            ->assertJson(['generated' => 2]);
     }
 
     public function test_no_fully_duplicated_cards_in_game(): void
