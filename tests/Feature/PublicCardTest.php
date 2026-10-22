@@ -114,9 +114,71 @@ class PublicCardTest extends TestCase
             ->assertSee('QR Code para acompanhar a cartela')
             ->assertSee('data:image/png;base64');
 
+        // Com o QR desligado, apenas o QR some — o código de barras do
+        // canhoto continua impresso (identificação da cartela no caixa).
         $this->get("/games/{$this->game->id}/cards/print?qr=0")
             ->assertOk()
             ->assertDontSee('QR Code para acompanhar a cartela')
-            ->assertDontSee('data:image/png;base64');
+            ->assertDontSee('<img class="card-header__qr"', false)
+            ->assertSee('Código de barras da cartela')
+            ->assertSee('data:image/png;base64');
+    }
+
+    public function test_event_data_update_persists_stub_code_type(): void
+    {
+        $this->put("/games/{$this->game->id}", ['name' => 'Teste QR', 'stub_code_type' => 'qrcode'])
+            ->assertRedirect();
+
+        $this->assertSame('qrcode', $this->game->refresh()->stub_code_type);
+    }
+
+    public function test_stub_prints_barcode_by_default_and_qrcode_when_selected(): void
+    {
+        // Padrão: código de barras no canhoto (leitor de caixa).
+        $this->get("/games/{$this->game->id}/cards/print")
+            ->assertOk()
+            ->assertSee('Código de barras da cartela')
+            ->assertDontSee('QR Code da cartela');
+
+        // Dados do evento: QR Code no canhoto — imprime mesmo com o QR
+        // do cabeçalho desligado, pois alimenta a conferência por celular.
+        $this->game->update(['stub_code_type' => 'qrcode']);
+
+        $this->get("/games/{$this->game->id}/cards/print?qr=0")
+            ->assertOk()
+            ->assertSee('QR Code da cartela')
+            ->assertDontSee('Código de barras da cartela')
+            ->assertDontSee('QR Code para acompanhar a cartela');
+
+        // Somente o número da cartela: nenhum código legível por máquina.
+        $this->game->update(['stub_code_type' => 'none']);
+
+        $this->get("/games/{$this->game->id}/cards/print?qr=0")
+            ->assertOk()
+            ->assertSee('Número da cartela')
+            ->assertDontSee('Código de barras da cartela')
+            ->assertDontSee('QR Code da cartela')
+            ->assertDontSee('QR Code para acompanhar a cartela');
+    }
+
+    public function test_art_svg_stub_matches_the_selected_code_type(): void
+    {
+        // Padrão: barras Code128 em vetorial no canhoto da arte.
+        $svg = $this->get("/games/{$this->game->id}/cards/art?card={$this->card->code}")->streamedContent();
+        $this->assertSame(28, substr_count($svg, 'height="4" fill="#0f172a"'));
+
+        $this->game->update(['stub_code_type' => 'qrcode']);
+
+        // QR: grade de módulos quadrados no lugar das barras.
+        $svg = $this->get("/games/{$this->game->id}/cards/art?card={$this->card->code}")->streamedContent();
+        $this->assertSame(0, substr_count($svg, 'height="4" fill="#0f172a"'));
+        $this->assertGreaterThan(100, substr_count($svg, 'fill="#0f172a"'));
+
+        // Somente o número: sem barras e sem grade, apenas o código em texto.
+        $this->game->update(['stub_code_type' => 'none']);
+
+        $svg = $this->get("/games/{$this->game->id}/cards/art?card={$this->card->code}")->streamedContent();
+        $this->assertSame(0, substr_count($svg, 'height="4" fill="#0f172a"'));
+        $this->assertStringContainsString('font-size="6" font-weight="bold" letter-spacing="1"', $svg);
     }
 }

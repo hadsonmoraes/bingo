@@ -107,6 +107,9 @@ class CardPrintService
 
         $showQr = $this->boolean($query, 'qr', true);
 
+        // Código impresso no canhoto: escolhido nos dados do evento.
+        $stubCodeType = $game->stubCodeType();
+
         return [
             'game' => $game,
             'cards' => $cards,
@@ -116,10 +119,14 @@ class CardPrintService
             'template' => $template,
             'templateWarnings' => $templateWarnings,
             'showQr' => $showQr,
-            'qrCodes' => $showQr
+            // O QR também alimenta o canhoto quando é o tipo escolhido.
+            'qrCodes' => ($showQr || $stubCodeType === 'qrcode')
                 ? app(QrCodeService::class)->cardsDataUri($game, $cards, $baseUrl)
                 : [],
-            'barcodes' => app(BarcodeService::class)->cardsDataUri($cards),
+            'stubCodeType' => $stubCodeType,
+            'barcodes' => $stubCodeType === 'barcode'
+                ? app(BarcodeService::class)->cardsDataUri($cards)
+                : [],
             'perPage' => $blocksCount > 1
                 ? 1
                 : (in_array((int) ($query['per_page'] ?? null), [1, 2, 4], true) ? (int) $query['per_page'] : 2),

@@ -32,6 +32,20 @@ class QrCodeService
     }
 
     /**
+     * Matriz do QR Code (true = módulo escuro) — usada para renderizar
+     * o QR em vetorial na arte exportável (canhoto da cartela).
+     *
+     * @return array<int, array<int, bool>>
+     */
+    public function matrix(string $data): array
+    {
+        $qrcode = new QRCode(new QROptions(['eccLevel' => EccLevel::M]));
+        $qrcode->addByteSegment($data);
+
+        return $qrcode->getQRMatrix()->getBooleanMatrix();
+    }
+
+    /**
      * URL pública de acompanhamento da cartela — o destino do QR
      * impresso. Sem $baseUrl usa o endereço da requisição atual;
      * gere/imprima as cartelas pelo mesmo endereço que o público

@@ -95,7 +95,10 @@
                 <p class="mt-3 text-sm text-slate-500">Nenhuma cartela gerada. Gere e imprima as cartelas antes de iniciar.</p>
             @else
                 <p class="mt-3 text-sm text-slate-600">{{ $game->cards_count }} cartela(s) gerada(s). Use a página de cartelas para imprimir.</p>
-                <a href="{{ route('games.cards.print', $game) }}" target="_blank" rel="noopener" class="mt-3 inline-block rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700">Imprimir cartelas</a>
+                <div class="mt-3 flex flex-wrap gap-2">
+                    <a href="{{ route('games.cards.print', $game) }}" target="_blank" rel="noopener" class="inline-block rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700">Imprimir cartelas</a>
+                    <a href="{{ route('games.check', $game) }}" target="_blank" rel="noopener" class="inline-block rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-amber-400">Conferir cartelas</a>
+                </div>
             @endif
         </div>
     </div>

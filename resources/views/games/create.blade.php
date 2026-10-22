@@ -26,7 +26,7 @@
                        placeholder="Ex.: Paróquia São José">
             </div>
 
-            <div class="mt-4 grid gap-4 sm:grid-cols-3">
+            <div class="mt-4 grid gap-4 sm:grid-cols-2">
                 <div>
                     <label for="event_date" class="block text-sm font-semibold text-slate-700">Data do evento</label>
                     <input id="event_date" type="date" name="event_date" value="{{ old('event_date') }}"
@@ -39,6 +39,21 @@
                            class="mt-1 w-full rounded-xl border-slate-300 focus:border-amber-500 focus:ring-amber-500">
                     @error('card_price')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
+            </div>
+
+            <div class="mt-4">
+                <label for="logo" class="block text-sm font-semibold text-slate-700">Logotipo da instituição (opcional)</label>
+                <input id="logo" type="file" name="logo" accept="image/*"
+                       class="mt-1 w-full rounded-xl border-slate-300 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-slate-900 file:px-3 file:py-2 file:text-white">
+                <p class="mt-1 text-xs text-slate-500">PNG ou JPG até 2MB. Sem logotipo, a cartela usa um cabeçalho tipográfico elegante.</p>
+                @error('logo')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+            </div>
+        </div>
+
+        <div class="border-b border-slate-200 pb-5">
+            <p class="text-sm font-bold uppercase tracking-wide text-slate-400">Aparência</p>
+
+            <div class="mt-3 grid gap-4 sm:grid-cols-2">
                 <div>
                     <label for="theme_color" class="block text-sm font-semibold text-slate-700">Cor do tema</label>
                     <select id="theme_color" name="theme_color"
@@ -56,13 +71,21 @@
                     @error('letters_word')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
                 </div>
             </div>
+        </div>
 
-            <div class="mt-4">
-                <label for="logo" class="block text-sm font-semibold text-slate-700">Logotipo da instituição (opcional)</label>
-                <input id="logo" type="file" name="logo" accept="image/*"
-                       class="mt-1 w-full rounded-xl border-slate-300 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-slate-900 file:px-3 file:py-2 file:text-white">
-                <p class="mt-1 text-xs text-slate-500">PNG ou JPG até 2MB. Sem logotipo, a cartela usa um cabeçalho tipográfico elegante.</p>
-                @error('logo')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+        <div class="border-b border-slate-200 pb-5">
+            <p class="text-sm font-bold uppercase tracking-wide text-slate-400">Cartelas impressas</p>
+
+            <div class="mt-3">
+                <label for="stub_code_type" class="block text-sm font-semibold text-slate-700">Código impresso no canhoto</label>
+                <select id="stub_code_type" name="stub_code_type"
+                        class="mt-1 w-full rounded-xl border-slate-300 focus:border-amber-500 focus:ring-amber-500 sm:max-w-md">
+                    @foreach (\App\Models\Game::STUB_CODE_TYPES as $value => $label)
+                        <option value="{{ $value }}" {{ old('stub_code_type', 'barcode') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                    @endforeach
+                </select>
+                <p class="mt-1 text-xs text-slate-500">Código de barras: melhor para leitor de caixa. QR Code: melhor para ler com a câmera do celular. Somente o número: sem código legível por máquina — a conferência é feita digitando o código.</p>
+                @error('stub_code_type')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
             </div>
         </div>
 

@@ -57,10 +57,39 @@ class BarcodeService
     private const QUIET_MODULES = 10;
 
     /**
-     * PNG data URI do código de barras Code128-B do texto informado.
-     * Aceita apenas ASCII imprimível (32-126).
+     * Trechos pretos do símbolo Code128-B em módulos: cada item é
+     * [início, largura] contado a partir do primeiro módulo do símbolo,
+     * sem a margem silenciosa — quem desenha decide a folga ao redor.
+     * Usado para renderizar o código em SVG vetorial (arte exportável).
+     *
+     * @return array<int, array{0: int, 1: int}>
      */
-    public function dataUri(string $data, int $scale = 2, int $height = 60): string
+    public function runs(string $data): array
+    {
+        $bits = $this->encode($data);
+
+        $runs = [];
+        $start = null;
+        foreach (str_split($bits) as $module => $bit) {
+            if ($bit === '1') {
+                $start ??= $module;
+            } elseif ($start !== null) {
+                $runs[] = [$start, $module - $start];
+                $start = null;
+            }
+        }
+        if ($start !== null) {
+            $runs[] = [$start, strlen($bits) - $start];
+        }
+
+        return $runs;
+    }
+
+    /**
+     * Sequência de módulos (1 = barra, 0 = espaço) do símbolo Code128-B
+     * completo: start, dados, dígito verificador e stop.
+     */
+    private function encode(string $data): string
     {
         $data = trim($data);
         if ($data === '' || preg_match('/^[\x20-\x7E]+$/', $data) !== 1) {
@@ -80,7 +109,17 @@ class BarcodeService
         foreach ($symbols as $symbol) {
             $bits .= self::PATTERNS[$symbol];
         }
-        $bits .= self::STOP;
+
+        return $bits.self::STOP;
+    }
+
+    /**
+     * PNG data URI do código de barras Code128-B do texto informado.
+     * Aceita apenas ASCII imprimível (32-126).
+     */
+    public function dataUri(string $data, int $scale = 2, int $height = 60): string
+    {
+        $bits = $this->encode($data);
 
         $width = (strlen($bits) + self::QUIET_MODULES * 2) * $scale;
 

@@ -38,6 +38,12 @@ function pdfExportRow(item) {
 }
 
 async function pollPdfExports(url, followUp) {
+    // O painel de exportações só existe na página de cartelas; sem ele,
+    // não há o que acompanhar (e nada a requisitar).
+    if (!url) {
+        return;
+    }
+
     try {
         const response = await fetch(url, { headers: { Accept: 'application/json' } });
         if (!response.ok) {
@@ -71,7 +77,9 @@ pdfExportsPanel?.addEventListener('click', (event) => {
     }
 });
 
-pollPdfExports(pdfExportsPanel?.dataset.pollUrl, true);
+if (pdfExportsPanel?.dataset.pollUrl) {
+    pollPdfExports(pdfExportsPanel.dataset.pollUrl, true);
+}
 
 // Geração de lotes grandes de cartelas pela fila — acompanha o lote
 // até a última cartela e recarrega a lista quando termina.

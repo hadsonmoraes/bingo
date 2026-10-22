@@ -106,10 +106,19 @@
                     <p class="card-stub__event">{{ $game->name }} · Cartela <strong>{{ $card->code }}</strong></p>
                     <div class="card-stub__row">
                         <p class="card-stub__fields">Nome: ______________________________ Telefone: ______________</p>
-                        @if ($barcodes[$card->id] ?? null)
+                        @if ($stubCodeType === 'qrcode' && ($qrCodes[$card->id] ?? null))
+                            <div class="card-stub__code" title="QR Code da cartela {{ $card->code }}">
+                                <img class="card-stub__qr" src="{{ $qrCodes[$card->id] }}" alt="QR Code da cartela {{ $card->code }}">
+                                <p class="card-stub__barcode-code">{{ $card->code }}</p>
+                            </div>
+                        @elseif ($barcodes[$card->id] ?? null)
                             <div class="card-stub__barcode" title="Código de barras da cartela {{ $card->code }}">
                                 <img src="{{ $barcodes[$card->id] }}" alt="Código de barras da cartela {{ $card->code }}">
                                 <p class="card-stub__barcode-code">{{ $card->code }}</p>
+                            </div>
+                        @elseif ($stubCodeType === 'none')
+                            <div class="card-stub__barcode" title="Número da cartela {{ $card->code }}">
+                                <p class="card-stub__number">{{ $card->code }}</p>
                             </div>
                         @endif
                     </div>

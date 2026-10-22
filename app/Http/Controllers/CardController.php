@@ -259,8 +259,14 @@ class CardController extends Controller
         ]);
     }
 
-    public function test(Game $game)
+    /**
+     * Página de conferência de cartelas: recebe a leitura do código de
+     * barras do canhoto (ou o código digitado) e registra vendas rápidas
+     * no caixa — separada da tela do sorteio para não interromper o
+     * registro das pedras.
+     */
+    public function checkPage(Game $game)
     {
-        return view('test.check');
+        return view('games.check', ['game' => $game]);
     }
 }

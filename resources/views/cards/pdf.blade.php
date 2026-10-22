@@ -70,6 +70,8 @@
         .stub-fields { font-size: 8.5pt; }
         .stub-barcode { text-align: right; white-space: nowrap; }
         .stub-barcode img.barcode { width: 30mm; height: 7.5mm; margin: 0; }
+        .stub-barcode img.qr { width: 14mm; height: 14mm; margin: 0; }
+        .stub-barcode p.card-number { font-size: 11pt; }
         .stub-barcode p.barcode-code { font-family: 'Courier New', monospace; font-size: 8pt; font-weight: bold; letter-spacing: 2px; margin: 0.3mm 0 0; }
         .price { margin: 0; padding: 1.5mm 3mm; color: #ffffff; font-size: 9pt; font-weight: bold; text-align: center; background-color: {{ $theme[0] }}; }
 

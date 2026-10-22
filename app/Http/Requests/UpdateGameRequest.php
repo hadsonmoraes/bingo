@@ -23,6 +23,7 @@ class UpdateGameRequest extends FormRequest
             'event_date' => ['nullable', 'date'],
             'card_price' => ['nullable', 'numeric', 'min:0'],
             'theme_color' => ['nullable', 'in:'.implode(',', array_keys(Game::THEME_COLORS))],
+            'stub_code_type' => ['nullable', 'in:'.implode(',', array_keys(Game::STUB_CODE_TYPES))],
             'logo' => ['nullable', 'image', 'max:2048'],
             'letters_word' => ['nullable', 'string', 'max:10', 'regex:/^[\pL]{5}$/u'],
         ];

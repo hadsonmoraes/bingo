@@ -10,6 +10,7 @@ export default defineConfig({
                 'resources/css/app.css',
                 'resources/js/app.js',
                 'resources/js/draw.js',
+                'resources/js/check.js',
                 'resources/js/card.js',
                 'resources/js/screen.js',
                 'resources/js/prizes.js',

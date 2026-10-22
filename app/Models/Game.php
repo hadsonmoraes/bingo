@@ -18,6 +18,13 @@ class Game extends Model
 
     public const LETTERS = ['B', 'I', 'N', 'G', 'O'];
 
+    /** Código impresso no canhoto destacável das cartelas. */
+    public const STUB_CODE_TYPES = [
+        'barcode' => 'Código de barras',
+        'qrcode' => 'QR Code',
+        'none' => 'Somente o número da cartela',
+    ];
+
     protected $fillable = [
         'name',
         'number_min',
@@ -33,6 +40,7 @@ class Game extends Model
         'event_date',
         'card_price',
         'theme_color',
+        'stub_code_type',
         'na_boa_threshold',
         'current_prize_id',
     ];
@@ -108,6 +116,16 @@ class Game extends Model
     public function totalNumbers(): int
     {
         return $this->number_max - $this->number_min + 1;
+    }
+
+    /**
+     * Tipo de código impresso no canhoto, normalizado (padrão: barcode).
+     */
+    public function stubCodeType(): string
+    {
+        return array_key_exists($this->stub_code_type, self::STUB_CODE_TYPES)
+            ? $this->stub_code_type
+            : 'barcode';
     }
 
     /**
