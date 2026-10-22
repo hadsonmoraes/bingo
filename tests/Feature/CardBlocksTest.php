@@ -21,8 +21,8 @@ class CardBlocksTest extends TestCase
         $game = Game::create([
             'name' => 'Bingo dos Blocos',
             'organization_name' => 'Instituição Teste',
-            'number_min' => $format === '90' ? 1 : 1,
-            'number_max' => $format === '90' ? 90 : 75,
+            'number_min' => 1,
+            'number_max' => $format === 'custom' ? 50 : 75,
             'use_letters' => $format === '75',
             'card_format' => $format,
             'status' => Game::STATUS_SETUP,
@@ -122,20 +122,19 @@ class CardBlocksTest extends TestCase
             }
         }
 
-        // 90 bolas: 3 linhas x 9 colunas, 15 números, 5 por linha
-        $game90 = $this->createGame(1, '90');
-        $card90 = app(CardGenerator::class)->createCard($game90);
-        $grid90 = $card90->blocks()->first()->grid;
+        // Personalizado: 5x5 com números do intervalo definido
+        $gameCustom = $this->createGame(1, 'custom');
+        $cardCustom = app(CardGenerator::class)->createCard($gameCustom);
+        $gridCustom = $cardCustom->blocks()->first()->grid;
 
-        $this->assertCount(3, $grid90);
-        $this->assertCount(9, $grid90[0]);
-        $total = 0;
-        foreach ($grid90 as $row) {
-            $rowNumbers = collect($row)->filter()->count();
-            $this->assertSame(5, $rowNumbers, 'Cada linha do bingo de 90 bolas deve ter 5 números.');
-            $total += $rowNumbers;
+        $this->assertCount(5, $gridCustom);
+        $this->assertCount(5, $gridCustom[0]);
+        foreach ($gridCustom as $row) {
+            foreach ($row as $value) {
+                $this->assertGreaterThanOrEqual($gameCustom->number_min, $value);
+                $this->assertLessThanOrEqual($gameCustom->number_max, $value);
+            }
         }
-        $this->assertSame(15, $total);
     }
 
     /** 7. A arte pode ser exportada e importada sem modificar os dados do jogo. */

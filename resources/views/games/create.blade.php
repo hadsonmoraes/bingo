@@ -91,16 +91,11 @@
 
         <div class="border-b border-slate-200 pb-4">
             <p class="text-sm font-bold uppercase tracking-wide text-slate-400">Formato do bingo</p>
-            <div class="mt-3 grid gap-3 sm:grid-cols-3" data-format-cards>
+            <div class="mt-3 grid gap-3 sm:grid-cols-2" data-format-cards>
                 <label class="cursor-pointer rounded-xl border-2 border-slate-200 p-4 transition hover:border-amber-400 has-checked:border-amber-500 has-checked:bg-amber-50">
                     <input type="radio" name="card_format" value="75" class="sr-only" {{ old('card_format', '75') === '75' ? 'checked' : '' }} data-format="75">
                     <span class="block font-bold">75 bolas</span>
                     <span class="text-sm text-slate-500">Colunas B-I-N-G-O, cartela 5×5 com casa livre.</span>
-                </label>
-                <label class="cursor-pointer rounded-xl border-2 border-slate-200 p-4 transition hover:border-amber-400 has-checked:border-amber-500 has-checked:bg-amber-50">
-                    <input type="radio" name="card_format" value="90" class="sr-only" {{ old('card_format') === '90' ? 'checked' : '' }} data-format="90">
-                    <span class="block font-bold">90 bolas</span>
-                    <span class="text-sm text-slate-500">Cartela 3×9 com 15 números.</span>
                 </label>
                 <label class="cursor-pointer rounded-xl border-2 border-slate-200 p-4 transition hover:border-amber-400 has-checked:border-amber-500 has-checked:bg-amber-50">
                     <input type="radio" name="card_format" value="custom" class="sr-only" {{ old('card_format') === 'custom' ? 'checked' : '' }} data-format="custom">

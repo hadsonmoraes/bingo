@@ -177,7 +177,6 @@ class CardGenerator
     public function generateGrid(Game $game): array
     {
         return match ($game->card_format) {
-            '90' => $this->generate90($game),
             'custom' => $this->generateCustom($game),
             default => $this->generate75($game),
         };
@@ -203,99 +202,6 @@ class CardGenerator
         }
 
         $grid[2][2] = null; // casa livre
-
-        return $grid;
-    }
-
-    /**
-     * Cartela 90 bolas: 3 linhas x 9 colunas, 5 números por linha.
-     */
-    private function generate90(Game $game): array
-    {
-        for ($attempt = 0; $attempt < 200; $attempt++) {
-            $grid = $this->tryGenerate90($game);
-
-            if ($grid !== null) {
-                return $grid;
-            }
-        }
-
-        return $this->generate90Deterministic($game);
-    }
-
-    private function tryGenerate90(Game $game): ?array
-    {
-        // Quantidade de números por coluna (1 a 3, totalizando 15)
-        $counts = array_fill(0, 9, 1);
-        $extra = 6;
-        while ($extra > 0) {
-            $col = random_int(0, 8);
-            if ($counts[$col] < 3) {
-                $counts[$col]++;
-                $extra--;
-            }
-        }
-
-        $grid = array_fill(0, 3, array_fill(0, 9, null));
-        $capacity = [5, 5, 5];
-
-        for ($col = 0; $col < 9; $col++) {
-            $start = max($col * 10 + 1, $game->number_min);
-            $end = min($col * 10 + 10, $game->number_max);
-
-            $pool = range($start, $end);
-            shuffle($pool);
-            $numbers = array_slice($pool, 0, $counts[$col]);
-            sort($numbers);
-
-            // Coloca os números da coluna nas linhas com mais capacidade restante,
-            // sem repetir linha na mesma coluna (evita sobrescrever números)
-            foreach ($numbers as $number) {
-                arsort($capacity);
-                $row = null;
-                foreach (array_keys($capacity) as $candidate) {
-                    if ($capacity[$candidate] > 0 && $grid[$candidate][$col] === null) {
-                        $row = $candidate;
-                        break;
-                    }
-                }
-
-                if ($row === null) {
-                    return null;
-                }
-
-                $grid[$row][$col] = $number;
-                $capacity[$row]--;
-            }
-        }
-
-        foreach ($capacity as $remaining) {
-            if ($remaining !== 0) {
-                return null;
-            }
-        }
-
-        return $grid;
-    }
-
-    private function generate90Deterministic(Game $game): array
-    {
-        $grid = array_fill(0, 3, array_fill(0, 9, null));
-
-        for ($col = 0; $col < 9; $col++) {
-            $start = max($col * 10 + 1, $game->number_min);
-            $end = min($col * 10 + 10, $game->number_max);
-            $count = min(3, max(1, count(range($start, $end))));
-
-            $pool = range($start, $end);
-            shuffle($pool);
-            $numbers = array_slice($pool, 0, $count);
-            sort($numbers);
-
-            foreach ($numbers as $row => $number) {
-                $grid[$row % 3][$col] = $number;
-            }
-        }
 
         return $grid;
     }

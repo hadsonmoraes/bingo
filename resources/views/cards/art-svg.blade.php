@@ -1,7 +1,6 @@
 @php
     $useLetters = $game->card_format === '75';
-    $is90 = $game->card_format === '90';
-    $blocksPerRow = max(1, min($is90 ? 2 : 3, $blocks->count()));
+    $blocksPerRow = max(1, min(3, $blocks->count()));
     $margin = 8;
     $usableW = 210 - 2 * $margin;
     $blockGap = 4;
@@ -9,9 +8,9 @@
 
     $y = $margin;
     $headerH = 16;
-    $rows = $is90 ? 3 : 5;
-    $cols = $is90 ? 9 : 5;
-    $cell = $is90 ? min($blockW / $cols, 11) : min($blockW / $cols, 13);
+    $rows = 5;
+    $cols = 5;
+    $cell = min($blockW / $cols, 13);
     $captionH = 7;
     $lettersH = $useLetters ? $cell * 0.7 : 0;
     $blockH = $captionH + $lettersH + $rows * $cell;

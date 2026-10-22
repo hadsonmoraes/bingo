@@ -83,7 +83,6 @@
         .card-block .card-grid th { font-size: 9px; padding: 1.0mm 0; }
         .card-blocks--1 .card-block .card-grid td { font-size: 24px; padding: 5mm 0; }
         .card-blocks--1 .card-block .card-grid th { font-size: 16px; padding: 2mm 0; }
-        .card-blocks--90 .card-block .card-grid td { font-size: 10px; padding: 1.8mm 0; }
 
         .card-grid { width: 100%; border-collapse: collapse; table-layout: fixed; flex: 1; }
         .card-grid th { font-size: 14px; padding: 1.5mm 0; color: #fff; border: 1px solid #0f172a; font-weight: 900; }
@@ -126,7 +125,6 @@
         .bingo-card.has-multi-blocks .card-grid td { font-size: 13px; padding: 2.0mm 0; }
         .bingo-card.has-multi-blocks .card-grid th { font-size: 9px; padding: 1.0mm 0; }
         .bingo-card.has-multi-blocks .card-header__title { font-size: 20px; }
-        .bingo-card.has-multi-blocks .card-blocks--90 .card-grid td { font-size: 10px; padding: 1.8mm 0; }
 
         @media print {
             .no-print { display: none; }

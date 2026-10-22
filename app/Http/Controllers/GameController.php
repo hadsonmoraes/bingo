@@ -37,10 +37,6 @@ class GameController extends Controller
             $validated['number_min'] = 1;
             $validated['number_max'] = 75;
             $validated['use_letters'] = true;
-        } elseif ($format === '90') {
-            $validated['number_min'] = 1;
-            $validated['number_max'] = 90;
-            $validated['use_letters'] = false;
         } else {
             $validated['use_letters'] = false;
             if ($validated['number_max'] - $validated['number_min'] + 1 < 25) {

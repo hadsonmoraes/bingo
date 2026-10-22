@@ -164,8 +164,8 @@ class PrizeController extends Controller
             return null;
         }
 
-        $rows = $game->card_format === '90' ? 3 : 5;
-        $cols = $game->card_format === '90' ? 9 : 5;
+        $rows = 5;
+        $cols = 5;
 
         $pattern = [];
         $any = false;

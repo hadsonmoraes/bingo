@@ -25,7 +25,7 @@ class StoreGameRequest extends FormRequest
             'theme_color' => ['nullable', 'in:'.implode(',', array_keys(Game::THEME_COLORS))],
             'stub_code_type' => ['nullable', 'in:'.implode(',', array_keys(Game::STUB_CODE_TYPES))],
             'logo' => ['nullable', 'image', 'max:2048'],
-            'card_format' => ['required', 'in:75,90,custom'],
+            'card_format' => ['required', 'in:75,custom'],
             'number_min' => ['required', 'integer', 'min:1', 'max:200'],
             'number_max' => ['required', 'integer', 'gt:number_min', 'max:200'],
             'use_letters' => ['nullable', 'boolean'],

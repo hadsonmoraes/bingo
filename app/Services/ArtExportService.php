@@ -117,9 +117,6 @@ class ArtExportService
      */
     private function placeholderGrid(Game $game): array
     {
-        $rows = $game->card_format === '90' ? 3 : 5;
-        $cols = $game->card_format === '90' ? 9 : 5;
-
-        return array_fill(0, $rows, array_fill(0, $cols, 0));
+        return array_fill(0, 5, array_fill(0, 5, 0));
     }
 }

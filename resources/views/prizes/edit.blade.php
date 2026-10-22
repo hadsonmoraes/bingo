@@ -76,7 +76,7 @@
 
 @push('scripts')
     <script>
-        window.bingoCardDimensions = @json($game->card_format === '90' ? [3, 9] : [5, 5]);
+        window.bingoCardDimensions = @json([5, 5]);
     </script>
     @vite('resources/js/prizes.js')
 @endpush

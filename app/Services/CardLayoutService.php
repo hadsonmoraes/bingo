@@ -28,14 +28,10 @@ class CardLayoutService
      */
     public function layout(Game $game, int $blocksCount): array
     {
-        // Cartelas de 90 bolas são largas (3x9): no máximo 2 por linha
-        $maxPerRow = $game->card_format === '90' ? 2 : self::MAX_BLOCKS_PER_ROW;
+        $maxPerRow = self::MAX_BLOCKS_PER_ROW;
 
         $blocksPerRow = max(1, min($maxPerRow, $blocksCount));
-        $blocksPerSheet = min(
-            self::MAX_BLOCKS_PER_SHEET,
-            $maxPerRow * ($game->card_format === '90' ? 3 : 2),
-        );
+        $blocksPerSheet = min(self::MAX_BLOCKS_PER_SHEET, $maxPerRow * 2);
 
         return [
             'blocks_per_row' => $blocksPerRow,

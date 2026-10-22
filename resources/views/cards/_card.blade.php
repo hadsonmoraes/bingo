@@ -67,7 +67,7 @@
     @endif
 
     {{-- Blocos numéricos: um bloco por prêmio, legenda fora da grade --}}
-    <div class="card-blocks card-blocks--{{ $blocksPerRow === 1 ? '1' : ($game->card_format === '90' ? '90' : 'multi') }}" style="--blocks-per-row: {{ $blocksPerRow }};">
+    <div class="card-blocks card-blocks--{{ $blocksPerRow === 1 ? '1' : 'multi' }}" style="--blocks-per-row: {{ $blocksPerRow }};">
         @foreach ($blocks as $block)
             <div class="card-block">
                 <p class="card-block__caption" style="background: {{ $theme[1] }}; color: {{ $theme[0] }}; border-color: {{ $theme[0] }};">
