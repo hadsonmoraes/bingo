@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreGameRequest;
+use App\Http\Requests\UpdateGameRequest;
+use App\Http\Requests\UpdateNaBoaThresholdRequest;
 use App\Models\Card;
 use App\Models\Game;
 use App\Models\GameEvent;
@@ -25,34 +28,15 @@ class GameController extends Controller
         return view('games.create');
     }
 
-    public function store(Request $request)
+    public function store(StoreGameRequest $request)
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:120'],
-            'organization_name' => ['nullable', 'string', 'max:150'],
-            'event_date' => ['nullable', 'date'],
-            'card_price' => ['nullable', 'numeric', 'min:0'],
-            'theme_color' => ['nullable', 'in:'.implode(',', array_keys(Game::THEME_COLORS))],
-            'logo' => ['nullable', 'image', 'max:2048'],
-            'card_format' => ['required', 'in:75,90,custom'],
-            'number_min' => ['required', 'integer', 'min:1', 'max:200'],
-            'number_max' => ['required', 'integer', 'gt:number_min', 'max:200'],
-            'use_letters' => ['nullable', 'boolean'],
-        ], [
-            'name.required' => 'Informe o nome da partida.',
-            'number_max.gt' => 'O número máximo deve ser maior que o mínimo.',
-        ]);
-
+        $validated = $request->validated();
         $format = $validated['card_format'];
 
         if ($format === '75') {
             $validated['number_min'] = 1;
             $validated['number_max'] = 75;
             $validated['use_letters'] = true;
-        } elseif ($format === '90') {
-            $validated['number_min'] = 1;
-            $validated['number_max'] = 90;
-            $validated['use_letters'] = false;
         } else {
             $validated['use_letters'] = false;
             if ($validated['number_max'] - $validated['number_min'] + 1 < 25) {
@@ -60,8 +44,11 @@ class GameController extends Controller
             }
         }
 
-        $game = Game::create($validated + ['status' => Game::STATUS_SETUP]);
+        if (isset($validated['letters_word'])) {
+            $validated['letters_word'] = mb_strtoupper($validated['letters_word']);
+        }
 
+        $game = Game::create($validated + ['status' => Game::STATUS_SETUP]);
         if ($request->hasFile('logo')) {
             $game->update(['logo_path' => $request->file('logo')->store('logos', 'public')]);
         }
@@ -74,16 +61,9 @@ class GameController extends Controller
         return view('games.edit', ['game' => $game]);
     }
 
-    public function update(Request $request, Game $game)
+    public function update(UpdateGameRequest $request, Game $game)
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:120'],
-            'organization_name' => ['nullable', 'string', 'max:150'],
-            'event_date' => ['nullable', 'date'],
-            'card_price' => ['nullable', 'numeric', 'min:0'],
-            'theme_color' => ['nullable', 'in:'.implode(',', array_keys(Game::THEME_COLORS))],
-            'logo' => ['nullable', 'image', 'max:2048'],
-        ]);
+        $validated = $request->validated();
 
         if ($request->boolean('remove_logo')) {
             if ($game->logo_path) {
@@ -97,16 +77,18 @@ class GameController extends Controller
             $validated['logo_path'] = $request->file('logo')->store('logos', 'public');
         }
 
+        if (isset($validated['letters_word'])) {
+            $validated['letters_word'] = mb_strtoupper($validated['letters_word']);
+        }
+
         $game->update($validated);
 
         return redirect()->route('games.show', $game)->with('success', 'Dados do evento atualizados.');
     }
 
-    public function threshold(Request $request, Game $game)
+    public function threshold(UpdateNaBoaThresholdRequest $request, Game $game)
     {
-        $validated = $request->validate([
-            'threshold' => ['required', 'integer', 'min:0', 'max:5'],
-        ]);
+        $validated = $request->validated();
 
         $game->update(['na_boa_threshold' => $validated['threshold']]);
 

@@ -40,6 +40,10 @@
         table.head td { padding: 2mm 3mm; vertical-align: middle; }
         td.head-brand { text-align: left; }
         td.head-meta { text-align: right; }
+        table.head-qr-row { width: 100%; border-collapse: collapse; margin: 0; }
+        table.head-qr-row td { border: 0; padding: 0 0 0 2mm; vertical-align: middle; text-align: right; }
+        td.head-qr-cell { width: 13mm; }
+        img.qr { width: 12mm; height: 12mm; }
         .org { font-size: 8pt; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5pt; margin: 0; }
         .event { font-size: 9pt; font-weight: bold; margin: 0; }
         .title { font-size: 20pt; font-weight: bold; letter-spacing: 2pt; margin: 0; line-height: 1; }
@@ -61,6 +65,14 @@
         .stub-cut { text-align: center; font-size: 8pt; color: #64748b; margin: 0; }
         .stub { margin: 1.5mm 2mm 2mm; border: 1.5px solid #0f172a; border-radius: 4px; padding: 1.5mm 2.5mm; font-size: 8.5pt; }
         .stub p { margin: 0.5mm 0; }
+        .stub-row { width: 100%; border-collapse: collapse; margin: 0.5mm 0 0; }
+        .stub-row td { border: 0; padding: 0; vertical-align: bottom; }
+        .stub-fields { font-size: 8.5pt; }
+        .stub-barcode { text-align: right; white-space: nowrap; }
+        .stub-barcode img.barcode { width: 30mm; height: 7.5mm; margin: 0; }
+        .stub-barcode img.qr { width: 14mm; height: 14mm; margin: 0; }
+        .stub-barcode p.card-number { font-size: 11pt; }
+        .stub-barcode p.barcode-code { font-family: 'Courier New', monospace; font-size: 8pt; font-weight: bold; letter-spacing: 2px; margin: 0.3mm 0 0; }
         .price { margin: 0; padding: 1.5mm 3mm; color: #ffffff; font-size: 9pt; font-weight: bold; text-align: center; background-color: {{ $theme[0] }}; }
 
         .scale-big table.grid td { font-size: 30pt; padding: 8mm 0; }
@@ -69,6 +81,11 @@
         .scale-small table.grid td { font-size: 13pt; padding: 2.5mm 0; }
         .scale-small .title { font-size: 13pt; }
         .scale-small .prizes p { font-size: 6.5pt; }
+        .scale-small td.head-qr-cell { width: 9mm; }
+        .scale-small img.qr { width: 8mm; height: 8mm; }
+
+        .card--multi td.head-qr-cell { width: 10mm; }
+        .card--multi img.qr { width: 9mm; height: 9mm; }
 
         /* Vários blocos por cartela: escala segura para caber no A4
            sem reduzir os números a tamanho ilegível */

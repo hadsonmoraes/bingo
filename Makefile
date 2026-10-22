@@ -11,7 +11,7 @@
 UID  := $(shell id -u)
 GID  := $(shell id -g)
 
-.PHONY: help up down build composer artisan test pint tinker seed npm migrate
+.PHONY: help up down build composer artisan test pint tinker seed npm migrate worker-restart
 
 help: ## Lista os comandos disponíveis
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
@@ -21,6 +21,9 @@ up: ## Sobe a aplicação (http://localhost:8000)
 
 down: ## Derruba a aplicação
 	docker compose down
+
+worker-restart: ## Reinicia o worker da fila (obrigatório após mudar código PHP)
+	docker compose exec -T app php artisan queue:restart
 
 build: ## (Re)constrói a imagem PHP
 	docker compose build app

@@ -29,11 +29,17 @@
             </div>
         </div>
         <div class="card-header__meta">
-            <p class="card-header__title">AÇÃO ENTRE AMIGOS</p>
-            <p class="card-header__code">Cartela <strong>{{ $card->code }}</strong></p>
-            @if ($showDate && $game->event_date)
-                <p class="card-header__date">{{ $game->event_date->format('d/m/Y') }}</p>
+            @if (($showQr ?? true) && ($qrCodes[$card->id] ?? null))
+                <img class="card-header__qr" src="{{ $qrCodes[$card->id] }}"
+                    alt="QR Code para acompanhar a cartela {{ $card->code }}">
             @endif
+            <div class="card-header__meta-text">
+                <p class="card-header__title">AÇÃO ENTRE AMIGOS</p>
+                <p class="card-header__code">Cartela <strong>{{ $card->code }}</strong></p>
+                @if ($showDate && $game->event_date)
+                    <p class="card-header__date">{{ $game->event_date->format('d/m/Y') }}</p>
+                @endif
+            </div>
         </div>
     </div>
 
@@ -61,7 +67,7 @@
     @endif
 
     {{-- Blocos numéricos: um bloco por prêmio, legenda fora da grade --}}
-    <div class="card-blocks card-blocks--{{ $blocksPerRow === 1 ? '1' : ($game->card_format === '90' ? '90' : 'multi') }}" style="--blocks-per-row: {{ $blocksPerRow }};">
+    <div class="card-blocks card-blocks--{{ $blocksPerRow === 1 ? '1' : 'multi' }}" style="--blocks-per-row: {{ $blocksPerRow }};">
         @foreach ($blocks as $block)
             <div class="card-block">
                 <p class="card-block__caption" style="background: {{ $theme[1] }}; color: {{ $theme[0] }}; border-color: {{ $theme[0] }};">
@@ -72,7 +78,7 @@
                 <table class="card-grid">
                     @if ($useLetters)
                         <tr>
-                            @foreach (['B','I','N','G','O'] as $letter)
+                            @foreach ($game->letters() as $letter)
                                 <th style="background: {{ $theme[0] }};">{{ $letter }}</th>
                             @endforeach
                         </tr>
@@ -98,7 +104,24 @@
                 <div class="card-stub__body" style="border-color: {{ $theme[0] }};">
                     <p class="card-stub__title" style="color: {{ $theme[0] }};">{{ $game->organization_name ?? 'AÇÃO ENTRE AMIGOS' }}</p>
                     <p class="card-stub__event">{{ $game->name }} · Cartela <strong>{{ $card->code }}</strong></p>
-                    <p class="card-stub__fields">Nome: ______________________________ Telefone: ______________</p>
+                    <div class="card-stub__row">
+                        <p class="card-stub__fields">Nome: ______________________________ Telefone: ______________</p>
+                        @if ($stubCodeType === 'qrcode' && ($qrCodes[$card->id] ?? null))
+                            <div class="card-stub__code" title="QR Code da cartela {{ $card->code }}">
+                                <img class="card-stub__qr" src="{{ $qrCodes[$card->id] }}" alt="QR Code da cartela {{ $card->code }}">
+                                <p class="card-stub__barcode-code">{{ $card->code }}</p>
+                            </div>
+                        @elseif ($barcodes[$card->id] ?? null)
+                            <div class="card-stub__barcode" title="Código de barras da cartela {{ $card->code }}">
+                                <img src="{{ $barcodes[$card->id] }}" alt="Código de barras da cartela {{ $card->code }}">
+                                <p class="card-stub__barcode-code">{{ $card->code }}</p>
+                            </div>
+                        @elseif ($stubCodeType === 'none')
+                            <div class="card-stub__barcode" title="Número da cartela {{ $card->code }}">
+                                <p class="card-stub__number">{{ $card->code }}</p>
+                            </div>
+                        @endif
+                    </div>
                 </div>
             </div>
             <div class="card-buyer card-buyer--compact">

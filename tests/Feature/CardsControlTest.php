@@ -2,11 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\GenerateCardsJob;
 use App\Models\Card;
 use App\Models\Game;
 use App\Models\Prize;
 use App\Services\CardGenerator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -50,6 +52,97 @@ class CardsControlTest extends TestCase
         // Segundo lote incrementa
         $this->post("/games/{$this->game->id}/cards/generate", ['quantity' => 3]);
         $this->assertSame(3, $this->game->cards()->where('batch', 2)->count());
+    }
+
+    public function test_large_generations_go_to_the_queue(): void
+    {
+        Queue::fake();
+
+        $this->post("/games/{$this->game->id}/cards/generate", ['quantity' => 500])
+            ->assertRedirect()
+            ->assertSessionHas('generating_batch', 1)
+            ->assertSessionHas('generating_quantity', 500);
+
+        Queue::assertPushed(GenerateCardsJob::class, fn ($job) => $job->quantity === 500 && $job->batch === 1);
+
+        // Nada é gerado dentro da requisição HTTP
+        $this->assertSame(0, $this->game->cards()->count());
+    }
+
+    public function test_queue_job_generates_all_cards_in_batch(): void
+    {
+        (new GenerateCardsJob($this->game, 3, 7))->handle(app(CardGenerator::class));
+
+        $cards = $this->game->cards()->where('batch', 7)->orderBy('code')->get();
+
+        $this->assertCount(3, $cards);
+        $this->assertSame($cards->pluck('code')->unique()->count(), 3);
+        $this->assertSame(Card::STATUS_AVAILABLE, $cards->first()->status);
+    }
+
+    public function test_generation_status_counts_cards_of_the_batch(): void
+    {
+        $generator = app(CardGenerator::class);
+        for ($i = 0; $i < 2; $i++) {
+            $generator->createCard($this->game, batch: 4);
+        }
+        $generator->createCard($this->game, batch: 5);
+
+        $this->getJson("/games/{$this->game->id}/cards/generation-status?batch=4")
+            ->assertOk()
+            ->assertJson(['generated' => 2]);
+    }
+
+    public function test_custom_letters_word_replaces_bingo_on_cards_and_state(): void
+    {
+        $this->game->update(['letters_word' => 'festa']);
+
+        // Palavra normalizada para maiúsculas e letras mapeadas por faixa
+        $this->assertSame('FESTA', $this->game->lettersWord());
+        $this->assertSame(['F', 'E', 'S', 'T', 'A'], $this->game->letters());
+        $this->assertSame('F', $this->game->letterFor(1));
+        $this->assertSame('A', $this->game->letterFor(75));
+
+        // Estado (painel de números) entrega as letras do tema
+        $state = $this->getJson("/games/{$this->game->id}/state")->json();
+        $this->assertSame(['F', 'E', 'S', 'T', 'A'], $state['letters']);
+
+        // Cartela impressa usa as letras do tema no cabeçalho da grade
+        $card = app(CardGenerator::class)->createCard($this->game);
+        $html = $this->get("/games/{$this->game->id}/cards/print?card={$card->code}&per_page=1")->content();
+
+        foreach (['F', 'E', 'S', 'T', 'A'] as $letter) {
+            $this->assertStringContainsString(">{$letter}</th>", $html);
+        }
+        $this->assertStringNotContainsString('>B</th>', $html);
+    }
+
+    public function test_default_word_is_bingo_when_not_customized(): void
+    {
+        $this->assertSame('BINGO', $this->game->lettersWord());
+        $this->assertSame(['B', 'I', 'N', 'G', 'O'], $this->game->letters());
+        $this->assertSame('N', $this->game->letterFor(40));
+    }
+
+    public function test_letters_word_must_have_exactly_five_letters(): void
+    {
+        $this->post('/games', [
+            'name' => 'Tema inválido',
+            'card_format' => '75',
+            'number_min' => 1,
+            'number_max' => 75,
+            'letters_word' => 'FEST',
+        ])->assertSessionHasErrors('letters_word');
+
+        $this->post('/games', [
+            'name' => 'Tema válido',
+            'card_format' => '75',
+            'number_min' => 1,
+            'number_max' => 75,
+            'letters_word' => 'BAILE',
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('games', ['name' => 'Tema válido', 'letters_word' => 'BAILE']);
     }
 
     public function test_no_fully_duplicated_cards_in_game(): void

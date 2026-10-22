@@ -10,9 +10,7 @@
                 @if ($game->event_date){{ $game->event_date->format('d/m/Y') }} · @endif
                 @if ($game->card_price)Cartela R$ {{ number_format((float) $game->card_price, 2, ',', '.') }} · @endif
                 @if ($game->card_format === '75')
-                    75 bolas · B-I-N-G-O · cartela 5×5
-                @elseif ($game->card_format === '90')
-                    90 bolas · cartela 3×9
+                    75 bolas · {{ $game->use_letters ? implode('-', $game->letters()) : 'B-I-N-G-O' }} · cartela 5×5
                 @else
                     Números {{ $game->number_min }} a {{ $game->number_max }} · cartela 5×5
                 @endif
@@ -95,7 +93,10 @@
                 <p class="mt-3 text-sm text-slate-500">Nenhuma cartela gerada. Gere e imprima as cartelas antes de iniciar.</p>
             @else
                 <p class="mt-3 text-sm text-slate-600">{{ $game->cards_count }} cartela(s) gerada(s). Use a página de cartelas para imprimir.</p>
-                <a href="{{ route('games.cards.print', $game) }}" target="_blank" rel="noopener" class="mt-3 inline-block rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700">Imprimir cartelas</a>
+                <div class="mt-3 flex flex-wrap gap-2">
+                    <a href="{{ route('games.cards.print', $game) }}" target="_blank" rel="noopener" class="inline-block rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700">Imprimir cartelas</a>
+                    <a href="{{ route('games.check', $game) }}" target="_blank" rel="noopener" class="inline-block rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-amber-400">Conferir cartelas</a>
+                </div>
             @endif
         </div>
     </div>

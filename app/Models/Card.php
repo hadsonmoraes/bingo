@@ -31,7 +31,6 @@ class Card extends Model
         'game_id',
         'code',
         'grid',
-        'holder',
         'status',
         'buyer_name',
         'buyer_phone',
@@ -53,6 +52,23 @@ class Card extends Model
     public function statusLabel(): string
     {
         return self::STATUS_LABELS[$this->status] ?? $this->status;
+    }
+
+    /**
+     * Normaliza a entrada usada para localizar uma cartela: aceita o
+     * código puro (C-0001), o conteúdo do código de barras do canhoto
+     * ou a URL completa do QR Code impresso.
+     */
+    public static function normalizeCodeInput(string $input): string
+    {
+        $code = trim($input);
+
+        if (str_contains($code, '/')) {
+            $path = parse_url($code, PHP_URL_PATH) ?: $code;
+            $code = substr($path, (int) strrpos($path, '/') + 1);
+        }
+
+        return strtoupper(rawurldecode(trim($code)));
     }
 
     /**
@@ -102,7 +118,9 @@ class Card extends Model
      */
     public function effectiveBlocks(): Collection
     {
-        $blocks = $this->blocks()->orderBy('position')->get();
+        // Usa a relação carregada (eager load) quando disponível — a
+        // relação já vem ordenada por position.
+        $blocks = $this->blocks;
 
         if ($blocks->isNotEmpty()) {
             return $blocks;
@@ -125,15 +143,5 @@ class Card extends Model
         ]);
 
         return new Collection([$block]);
-    }
-
-    public function rowsCount(): int
-    {
-        return count($this->grid);
-    }
-
-    public function colsCount(): int
-    {
-        return count($this->grid[0] ?? []);
     }
 }

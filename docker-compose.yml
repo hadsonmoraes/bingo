@@ -8,6 +8,15 @@ services:
       - .:/var/www/html
     restart: unless-stopped
 
+  # Fila: processa jobs em background (ex.: PDF de lotes grandes de cartelas)
+  worker:
+    build: .
+    container_name: bingo-worker
+    command: php -d memory_limit=512M artisan queue:work database --sleep=1 --tries=1 --timeout=600 --memory=512
+    volumes:
+      - .:/var/www/html
+    restart: unless-stopped
+
   # Uso pontual: docker compose run --rm node npm install && npm run build
   node:
     image: node:22-bookworm-slim

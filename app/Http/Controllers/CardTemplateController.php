@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreCardTemplateRequest;
+use App\Http\Requests\UpdateCardTemplateRequest;
 use App\Models\CardTemplate;
 use App\Models\Game;
 use Illuminate\Http\Request;
@@ -26,16 +28,9 @@ class CardTemplateController extends Controller
         ]);
     }
 
-    public function store(Request $request, Game $game)
+    public function store(StoreCardTemplateRequest $request, Game $game)
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:120'],
-            'art' => ['required', 'file', 'max:4096'],
-        ], [
-            'name.required' => 'Informe um nome para o modelo.',
-            'art.required' => 'Selecione o arquivo de arte (SVG, PNG ou PDF).',
-            'art.max' => 'O arquivo deve ter no máximo 4 MB.',
-        ]);
+        $validated = $request->validated();
 
         $file = $request->file('art');
         $mime = $file->getMimeType();
@@ -67,22 +62,18 @@ class CardTemplateController extends Controller
      * Editor de áreas: posiciona os dados dinâmicos sobre a arte
      * importada, em milímetros, dentro da folha A4.
      */
-    public function edit(Game $game, CardTemplate $template)
+    public function edit(Game $game, CardTemplate $cardTemplate)
     {
         return view('card-templates.edit', [
             'game' => $game,
-            'template' => $template,
+            'template' => $cardTemplate,
             'blocksNeeded' => max(1, $game->prizes()->count()),
         ]);
     }
 
-    public function update(Request $request, Game $game, CardTemplate $template)
+    public function update(UpdateCardTemplateRequest $request, Game $game, CardTemplate $cardTemplate)
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:120'],
-            'is_default' => ['nullable', 'boolean'],
-            'areas' => ['required', 'array'],
-        ]);
+        $validated = $request->validated();
 
         $areas = $this->parseAreas($request->input('areas'), max(1, $game->prizes()->count()));
 
@@ -98,24 +89,24 @@ class CardTemplateController extends Controller
             $data['is_default'] = false;
         }
 
-        $template->update($data);
+        $cardTemplate->update($data);
 
         return redirect()->route('games.templates.index', $game)
-            ->with('success', 'Modelo "'.$template->name.'" salvo.');
+            ->with('success', 'Modelo "'.$cardTemplate->name.'" salvo.');
     }
 
-    public function duplicate(Request $request, Game $game, CardTemplate $template)
+    public function duplicate(Request $request, Game $game, CardTemplate $cardTemplate)
     {
-        $copy = $template->replicate();
-        $copy->name = $template->name.' (cópia)';
+        $copy = $cardTemplate->replicate();
+        $copy->name = $cardTemplate->name.' (cópia)';
         $copy->is_default = false;
 
         // Cópia física da arte para permitir exclusões independentes
-        if (Storage::disk('public')->exists($template->art_path)) {
+        if (Storage::disk('public')->exists($cardTemplate->art_path)) {
             $copy->art_path = Storage::disk('public')->put(
                 'card-templates',
-                Storage::disk('public')->get($template->art_path)
-            ) ?: $template->art_path;
+                Storage::disk('public')->get($cardTemplate->art_path)
+            ) ?: $cardTemplate->art_path;
         }
 
         $game->cardTemplates()->save($copy);
@@ -123,23 +114,23 @@ class CardTemplateController extends Controller
         return back()->with('success', 'Modelo duplicado. Ajuste a cópia conforme necessário.');
     }
 
-    public function setDefault(Request $request, Game $game, CardTemplate $template)
+    public function setDefault(Request $request, Game $game, CardTemplate $cardTemplate)
     {
         $game->cardTemplates()->update(['is_default' => false]);
-        $template->update(['is_default' => true]);
+        $cardTemplate->update(['is_default' => true]);
 
-        return back()->with('success', '"'.$template->name.'" é agora o modelo padrão do evento.');
+        return back()->with('success', '"'.$cardTemplate->name.'" é agora o modelo padrão do evento.');
     }
 
-    public function destroy(Request $request, Game $game, CardTemplate $template)
+    public function destroy(Request $request, Game $game, CardTemplate $cardTemplate)
     {
-        if ($template->art_path) {
-            Storage::disk('public')->delete($template->art_path);
+        if ($cardTemplate->art_path) {
+            Storage::disk('public')->delete($cardTemplate->art_path);
         }
 
-        $wasDefault = $template->is_default;
-        $name = $template->name;
-        $template->delete();
+        $wasDefault = $cardTemplate->is_default;
+        $name = $cardTemplate->name;
+        $cardTemplate->delete();
 
         if ($wasDefault) {
             $first = $game->cardTemplates()->first();
@@ -229,8 +220,9 @@ class CardTemplateController extends Controller
         if ($mime === 'image/svg+xml') {
             $svg = (string) file_get_contents($path);
 
-            // Rejeita SVG com scripts ou atributos de evento inline
-            return ! preg_match('/<script|on\w+\s*=/i', $svg);
+            // Rejeita SVG com scripts, atributos de evento inline ou
+            // links "javascript:" (vetores de XSS em contexto de SVG)
+            return ! preg_match('/<script|on\w+\s*=|javascript\s*:/i', $svg);
         }
 
         return false;

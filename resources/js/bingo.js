@@ -11,27 +11,34 @@ export function createBoard(container, state) {
         state.letters.forEach((letter, index) => {
             const start = index * perLetter + 1;
             const end = Math.min(state.game.number_max, start + perLetter - 1);
-            const count = end - start + 1;
 
-            const row = document.createElement('div');
-            row.className = 'grid gap-1';
-            row.style.gridTemplateColumns = `2.5rem repeat(${count}, minmax(0, 1fr))`;
+            const section = document.createElement('div');
+            section.className = 'grid items-start gap-1';
+            section.style.gridTemplateColumns = '2.5rem minmax(0, 1fr)';
 
             const label = document.createElement('div');
-            label.className = 'flex items-center justify-center rounded-md bg-slate-800 py-0.5 text-base font-black tracking-widest text-amber-300';
+            label.className = 'flex aspect-square items-center justify-center rounded-md bg-slate-800 text-base font-black tracking-widest text-amber-300';
             label.textContent = letter;
-            row.appendChild(label);
+            section.appendChild(label);
+
+            // Pedras quebram em várias linhas em telas estreitas (mobile),
+            // mantendo tamanho mínimo de 2.5rem — dedo consegue tocar.
+            const nums = document.createElement('div');
+            nums.className = 'grid gap-1';
+            nums.style.gridTemplateColumns = 'repeat(auto-fit, minmax(2.5rem, 1fr))';
 
             for (let n = start; n <= end; n++) {
-                row.appendChild(boardCell(n));
+                nums.appendChild(boardCell(n));
             }
-            wrap.appendChild(row);
+
+            section.appendChild(nums);
+            wrap.appendChild(section);
         });
 
         container.appendChild(wrap);
     } else {
         const grid = document.createElement('div');
-        grid.className = 'grid grid-cols-10 gap-1.5';
+        grid.className = 'grid grid-cols-5 gap-1.5 sm:grid-cols-10';
 
         for (let n = state.game.number_min; n <= state.game.number_max; n++) {
             grid.appendChild(boardCell(n));
@@ -84,7 +91,7 @@ export function renderHistory(container, state, limit = null, compact = false) {
     const items = limit ? state.history.slice(0, limit) : state.history;
     const chipClass = compact
         ? 'flex shrink-0 items-center justify-center rounded-lg bg-slate-700 px-2.5 py-1 text-base font-black text-white'
-        : 'flex shrink-0 items-center justify-center rounded-xl bg-slate-700 px-3 py-2 text-2xl font-black text-white';
+        : 'flex shrink-0 items-center justify-center rounded-xl bg-slate-700 px-3 py-2 text-lg font-black text-white sm:text-2xl';
     container.innerHTML = items.map((item) => `
         <span class="${chipClass}">
             ${item.letter ? `<span class="mr-0.5 text-sm text-amber-300">${item.letter}</span>` : ''}${item.number}

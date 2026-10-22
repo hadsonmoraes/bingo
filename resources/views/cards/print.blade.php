@@ -52,7 +52,9 @@
         .card-header__org { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
         .card-header__event { font-size: 10px; font-weight: 700; color: #0f172a; }
         .card-header__texts { min-width: 0; }
-        .card-header__meta { text-align: right; }
+        .card-header__meta { text-align: right; display: flex; align-items: center; justify-content: flex-end; gap: 2.5mm; }
+        .card-header__meta-text { text-align: right; }
+        .card-header__qr { width: 13mm; height: 13mm; }
         .card-header__title { font-size: 22px; font-weight: 900; letter-spacing: 2px; line-height: 1; color: #0f172a; }
         .card-header__code { font-size: 11px; font-weight: 600; color: #0f172a; }
         .card-header__date { font-size: 9px; color: #334155; }
@@ -81,7 +83,6 @@
         .card-block .card-grid th { font-size: 9px; padding: 1.0mm 0; }
         .card-blocks--1 .card-block .card-grid td { font-size: 24px; padding: 5mm 0; }
         .card-blocks--1 .card-block .card-grid th { font-size: 16px; padding: 2mm 0; }
-        .card-blocks--90 .card-block .card-grid td { font-size: 10px; padding: 1.8mm 0; }
 
         .card-grid { width: 100%; border-collapse: collapse; table-layout: fixed; flex: 1; }
         .card-grid th { font-size: 14px; padding: 1.5mm 0; color: #fff; border: 1px solid #0f172a; font-weight: 900; }
@@ -101,6 +102,13 @@
         .card-stub__title { font-weight: 900; text-transform: uppercase; letter-spacing: 1px; font-size: 9px; }
         .card-stub__event { font-weight: 700; }
         .card-stub__fields { margin-top: 1.5mm; }
+        .card-stub__row { display: flex; align-items: flex-end; justify-content: space-between; gap: 3mm; margin-top: 1.5mm; }
+        .card-stub__barcode { text-align: center; flex-shrink: 0; }
+        .card-stub__barcode img { width: 30mm; height: 7.5mm; }
+        .card-stub__code { text-align: center; flex-shrink: 0; }
+        .card-stub__code .card-stub__qr { width: 14mm; height: 14mm; }
+        .card-stub__barcode-code { font-family: 'Courier New', monospace; font-weight: 800; font-size: 9px; letter-spacing: 2px; margin-top: 0.5mm; }
+        .card-stub__number { font-family: 'Courier New', monospace; font-weight: 800; font-size: 13px; letter-spacing: 2px; }
 
         .card-price { margin: 0; padding: 1.5mm 4mm; color: #fff; font-size: 11px; font-weight: 800; text-align: center; }
 
@@ -112,10 +120,11 @@
         .bingo-card--4:not(.has-multi-blocks) .card-grid td { font-size: 15px; padding: 2.5mm 0; }
         .bingo-card--4:not(.has-multi-blocks) .card-header__title { font-size: 15px; }
         .bingo-card--4:not(.has-multi-blocks) .card-prizes__list { font-size: 7.5px; }
+        .bingo-card--4:not(.has-multi-blocks) .card-header__qr { width: 9mm; height: 9mm; }
+        .bingo-card.has-multi-blocks .card-header__qr { width: 10mm; height: 10mm; }
         .bingo-card.has-multi-blocks .card-grid td { font-size: 13px; padding: 2.0mm 0; }
         .bingo-card.has-multi-blocks .card-grid th { font-size: 9px; padding: 1.0mm 0; }
         .bingo-card.has-multi-blocks .card-header__title { font-size: 20px; }
-        .bingo-card.has-multi-blocks .card-blocks--90 .card-grid td { font-size: 10px; padding: 1.8mm 0; }
 
         @media print {
             .no-print { display: none; }
@@ -166,6 +175,8 @@
                     <label><input type="checkbox" name="split_blocks" value="1" {{ request()->boolean('split_blocks') ? 'checked' : '' }} onchange="this.form.submit()"> Dividir blocos em mais de uma folha</label>
                 @endif
             @endif
+            <input type="hidden" name="qr" value="0">
+            <label><input type="checkbox" name="qr" value="1" {{ $showQr ? 'checked' : '' }} onchange="this.form.submit()"> QR Code</label>
             <label><input type="checkbox" name="stub" value="1" {{ $stub ? 'checked' : '' }} onchange="this.form.submit()"> Com canhoto</label>
             <label><input type="checkbox" name="prizes" value="1" {{ $showPrizes ? 'checked' : '' }} onchange="this.form.submit()"> Prêmios</label>
             <label><input type="checkbox" name="price" value="1" {{ $showPrice ? 'checked' : '' }} onchange="this.form.submit()"> Valor</label>

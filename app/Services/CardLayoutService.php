@@ -2,9 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\Card;
 use App\Models\Game;
-use Illuminate\Support\Collection;
 
 /**
  * Calcula o arranjo visual dos blocos numéricos numa folha A4,
@@ -30,14 +28,10 @@ class CardLayoutService
      */
     public function layout(Game $game, int $blocksCount): array
     {
-        // Cartelas de 90 bolas são largas (3x9): no máximo 2 por linha
-        $maxPerRow = $game->card_format === '90' ? 2 : self::MAX_BLOCKS_PER_ROW;
+        $maxPerRow = self::MAX_BLOCKS_PER_ROW;
 
         $blocksPerRow = max(1, min($maxPerRow, $blocksCount));
-        $blocksPerSheet = min(
-            self::MAX_BLOCKS_PER_SHEET,
-            $maxPerRow * ($game->card_format === '90' ? 3 : 2),
-        );
+        $blocksPerSheet = min(self::MAX_BLOCKS_PER_SHEET, $maxPerRow * 2);
 
         return [
             'blocks_per_row' => $blocksPerRow,
@@ -48,25 +42,5 @@ class CardLayoutService
             'warning' => $blocksCount > $blocksPerSheet,
             'blocks_count' => $blocksCount,
         ];
-    }
-
-    /**
-     * Divide os blocos de uma cartela em "partes de folha" quando ela
-     * possui mais blocos do que cabe com legibilidade em um único A4.
-     * Cada parte repete o código da cartela e o cabeçalho.
-     *
-     * @return array<int, array{card: Card, blocks: Collection}>
-     */
-    public function sheetParts(Card $card, ?int $blocksPerSheet = null): array
-    {
-        $blocks = $card->effectiveBlocks();
-        $blocksPerSheet ??= $this->layout($card->game, $blocks->count())['blocks_per_sheet'];
-
-        $parts = [];
-        foreach ($blocks->chunk($blocksPerSheet) as $chunk) {
-            $parts[] = ['card' => $card, 'blocks' => $chunk->values()];
-        }
-
-        return $parts;
     }
 }

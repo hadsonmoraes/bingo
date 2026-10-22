@@ -55,6 +55,22 @@ class ArtExportService
      */
     public function buildSvg(Game $game, ?Card $card, bool $modelBase = false): string
     {
+        $code = $card?->code ?? 'C-0000';
+
+        // Código do canhoto em vetorial, conforme o tipo escolhido nos
+        // dados do evento: barras Code128 ou QR Code (mesmo destino do
+        // QR do cabeçalho — a página pública da cartela).
+        $stubCodeType = $game->stubCodeType();
+        $barcodeRuns = [];
+        $stubQrMatrix = [];
+        if ($stubCodeType === 'qrcode') {
+            $stubQrMatrix = app(QrCodeService::class)->matrix(
+                app(QrCodeService::class)->cardUrl($game, $card ?? new Card(['code' => $code])),
+            );
+        } elseif ($stubCodeType === 'barcode') {
+            $barcodeRuns = app(BarcodeService::class)->runs($code);
+        }
+
         $blocks = $card
             ? $card->effectiveBlocks()->map(fn ($block) => [
                 'label' => $block->label(),
@@ -86,7 +102,11 @@ class ArtExportService
             'blocks' => $blocks,
             'prizes' => $prizes,
             'model_base' => $modelBase,
-            'code' => $card?->code ?? 'C-0000',
+            'code' => $code,
+            'stub_code_type' => $stubCodeType,
+            // Código do canhoto em vetorial (barras Code128 ou QR Code).
+            'barcode_runs' => $barcodeRuns,
+            'stub_qr_matrix' => $stubQrMatrix,
         ];
 
         return view('cards.art-svg', $data)->render();
@@ -97,9 +117,6 @@ class ArtExportService
      */
     private function placeholderGrid(Game $game): array
     {
-        $rows = $game->card_format === '90' ? 3 : 5;
-        $cols = $game->card_format === '90' ? 9 : 5;
-
-        return array_fill(0, $rows, array_fill(0, $cols, 0));
+        return array_fill(0, 5, array_fill(0, 5, 0));
     }
 }

@@ -21,8 +21,8 @@ class CardBlocksTest extends TestCase
         $game = Game::create([
             'name' => 'Bingo dos Blocos',
             'organization_name' => 'Instituição Teste',
-            'number_min' => $format === '90' ? 1 : 1,
-            'number_max' => $format === '90' ? 90 : 75,
+            'number_min' => 1,
+            'number_max' => $format === 'custom' ? 50 : 75,
             'use_letters' => $format === '75',
             'card_format' => $format,
             'status' => Game::STATUS_SETUP,
@@ -68,7 +68,7 @@ class CardBlocksTest extends TestCase
         $html = $response->content();
 
         // A área de prêmios existe e lista todos os prêmios
-        $this->assertStringContainsString('PRÊMIOS DO BINGO', $html);
+        $this->assertStringContainsString('PRÊMIOS DA AÇÃO ENTRE AMIGOS', $html);
         foreach (range(1, 3) as $i) {
             $this->assertStringContainsString("Prêmio {$i}", $html);
         }
@@ -122,20 +122,19 @@ class CardBlocksTest extends TestCase
             }
         }
 
-        // 90 bolas: 3 linhas x 9 colunas, 15 números, 5 por linha
-        $game90 = $this->createGame(1, '90');
-        $card90 = app(CardGenerator::class)->createCard($game90);
-        $grid90 = $card90->blocks()->first()->grid;
+        // Personalizado: 5x5 com números do intervalo definido
+        $gameCustom = $this->createGame(1, 'custom');
+        $cardCustom = app(CardGenerator::class)->createCard($gameCustom);
+        $gridCustom = $cardCustom->blocks()->first()->grid;
 
-        $this->assertCount(3, $grid90);
-        $this->assertCount(9, $grid90[0]);
-        $total = 0;
-        foreach ($grid90 as $row) {
-            $rowNumbers = collect($row)->filter()->count();
-            $this->assertSame(5, $rowNumbers, 'Cada linha do bingo de 90 bolas deve ter 5 números.');
-            $total += $rowNumbers;
+        $this->assertCount(5, $gridCustom);
+        $this->assertCount(5, $gridCustom[0]);
+        foreach ($gridCustom as $row) {
+            foreach ($row as $value) {
+                $this->assertGreaterThanOrEqual($gameCustom->number_min, $value);
+                $this->assertLessThanOrEqual($gameCustom->number_max, $value);
+            }
         }
-        $this->assertSame(15, $total);
     }
 
     /** 7. A arte pode ser exportada e importada sem modificar os dados do jogo. */
@@ -170,6 +169,28 @@ class CardBlocksTest extends TestCase
         $this->assertSame($blocksBefore, $card->blocks()->orderBy('position')->get()->map(fn ($b) => $b->grid)->all());
         $this->assertSame($prizeLinksBefore, $card->blocks()->orderBy('position')->pluck('prize_id')->all());
         $this->assertSame(2, $card->effectiveBlocks()->count());
+    }
+
+    /** O sanitizador rejeita SVG com scripts, eventos inline ou links javascript:. */
+    public function test_dangerous_svg_uploads_are_rejected(): void
+    {
+        Storage::fake('public');
+        $game = $this->createGame(1);
+
+        $dangerousSvgs = [
+            'script tag' => '<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>',
+            'inline event' => '<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"></svg>',
+            'javascript link' => '<?xml version="1.0"?><svg xmlns="http://www.w3.org/2000/svg"><a href="javascript:alert(1)"><text>clique</text></a></svg>',
+        ];
+
+        foreach ($dangerousSvgs as $label => $svg) {
+            $this->post("/games/{$game->id}/card-templates", [
+                'name' => 'Arte '.$label,
+                'art' => UploadedFile::fake()->createWithContent('arte.svg', $svg, 'image/svg+xml'),
+            ])->assertSessionHas('error');
+
+            $this->assertDatabaseCount('card_templates', 0);
+        }
     }
 
     /** 8. O PDF mantém as dimensões A4. */

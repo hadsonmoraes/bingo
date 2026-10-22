@@ -1,7 +1,6 @@
 @php
     $useLetters = $game->card_format === '75';
-    $is90 = $game->card_format === '90';
-    $blocksPerRow = max(1, min($is90 ? 2 : 3, $blocks->count()));
+    $blocksPerRow = max(1, min(3, $blocks->count()));
     $margin = 8;
     $usableW = 210 - 2 * $margin;
     $blockGap = 4;
@@ -9,9 +8,9 @@
 
     $y = $margin;
     $headerH = 16;
-    $rows = $is90 ? 3 : 5;
-    $cols = $is90 ? 9 : 5;
-    $cell = $is90 ? min($blockW / $cols, 11) : min($blockW / $cols, 13);
+    $rows = 5;
+    $cols = 5;
+    $cell = min($blockW / $cols, 13);
     $captionH = 7;
     $lettersH = $useLetters ? $cell * 0.7 : 0;
     $blockH = $captionH + $lettersH + $rows * $cell;
@@ -20,6 +19,27 @@
     $prizesH = $prizeLines > 0 ? 6 + $prizeLines * 5.5 : 0;
 
     $buyerY = 297 - $margin - ($model_base ? 30 : 34);
+
+    // Código do canhoto em vetorial: barras Code128 ou QR Code, conforme
+    // o tipo escolhido nos dados do evento.
+    $stubCodeType = $stub_code_type ?? 'barcode';
+    $barcodeRuns = $barcode_runs ?? [];
+    $stubQrMatrix = $stub_qr_matrix ?? [];
+    $barcodeQuiet = 10; // módulos de margem silenciosa em cada lado
+    $barcodeSpan = $barcodeRuns ? end($barcodeRuns)[0] + end($barcodeRuns)[1] : 0;
+    $codeW = 46;
+    $codeX = 210 - $margin - 2 - $codeW;
+
+    // QR precisa de área quadrada maior que a faixa do código de barras:
+    // a caixa do canhoto cresce e o QR ocupa 16mm com margem silenciosa
+    // de 4 módulos em cada lado.
+    $stubIsQr = $stubCodeType === 'qrcode' && count($stubQrMatrix) > 0;
+    $stubH = $stubIsQr ? 18 : 8;
+    $stubY = $buyerY - 10 - ($stubH - 8);
+    $codeY = $stubIsQr ? $stubY + 1 : $buyerY - 9.5;
+    $qrSide = $stubIsQr ? 16 : 0;
+    $qrModule = $qrSide > 0 ? $qrSide / (count($stubQrMatrix) + 8) : 0;
+    $qrX = $codeX + ($codeW - $qrSide) / 2;
 @endphp
 <svg xmlns="http://www.w3.org/2000/svg" width="210mm" height="297mm" viewBox="0 0 210 297" font-family="DejaVu Sans, sans-serif">
     <rect x="0" y="0" width="210" height="297" fill="#ffffff"/>
@@ -67,7 +87,7 @@
 
                 @php $gy = $by + $captionH; @endphp
                 @if ($useLetters)
-                    @foreach (['B','I','N','G','O'] as $c => $letter)
+                    @foreach ($game->letters() as $c => $letter)
                         <rect x="{{ $bx + $c * ($blockW / 5) }}" y="{{ $gy }}" width="{{ $blockW / 5 }}" height="{{ $lettersH }}" fill="#b45309" stroke="#0f172a" stroke-width="0.3"/>
                         <text x="{{ $bx + $c * ($blockW / 5) + $blockW / 10 }}" y="{{ $gy + $lettersH * 0.75 }}" text-anchor="middle" font-size="{{ $cell * 0.6 }}" font-weight="bold" fill="#ffffff">{{ $letter }}</text>
                     @endforeach
@@ -96,9 +116,30 @@
     </g>
     <g id="area-canhoto">
         <text x="{{ $margin }}" y="{{ $buyerY + 8 }}" font-size="3.5" fill="#64748b">✂ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -</text>
-        <rect x="{{ $margin + 2 }}" y="{{ $buyerY - 10 }}" width="{{ $usableW - 4 }}" height="8" fill="none" stroke="#0f172a" stroke-width="0.4"/>
-        <text x="{{ $margin + 4 }}" y="{{ $buyerY - 6 }}" font-size="4" font-weight="bold" fill="#0f172a">{{ $game->organization_name ?: 'AÇÃO ENTRE AMIGOS' }} — {{ $game->name }} · Cartela {{ $code }}</text>
-        <text x="{{ $margin + 4 }}" y="{{ $buyerY - 2.5 }}" font-size="4" fill="#0f172a">Nome: ____________________________ Telefone: ______________</text>
+        <rect x="{{ $margin + 2 }}" y="{{ $stubY }}" width="{{ $usableW - 4 }}" height="{{ $stubH }}" fill="none" stroke="#0f172a" stroke-width="0.4"/>
+        <text x="{{ $margin + 4 }}" y="{{ $stubY + 4 }}" font-size="4" font-weight="bold" fill="#0f172a">{{ $game->organization_name ?: 'AÇÃO ENTRE AMIGOS' }} — {{ $game->name }} · Cartela {{ $code }}</text>
+        <text x="{{ $margin + 4 }}" y="{{ $stubY + 7.5 }}" font-size="4" fill="#0f172a">Nome: ____________________ Telefone: __________</text>
+        @if ($stubIsQr)
+            @foreach ($stubQrMatrix as $row => $modules)
+                @foreach ($modules as $col => $dark)
+                    @if ($dark)
+                        <rect x="{{ $qrX + (4 + $col) * $qrModule }}" y="{{ $codeY + (4 + $row) * $qrModule }}"
+                            width="{{ max(0.1, $qrModule) }}" height="{{ max(0.1, $qrModule) }}" fill="#0f172a"/>
+                    @endif
+                @endforeach
+            @endforeach
+        @elseif ($barcodeSpan > 0)
+            @foreach ($barcodeRuns as $run)
+                <rect x="{{ $codeX + ($barcodeQuiet + $run[0]) * ($codeW / ($barcodeSpan + 2 * $barcodeQuiet)) }}"
+                    y="{{ $codeY }}"
+                    width="{{ max(0.15, $run[1] * ($codeW / ($barcodeSpan + 2 * $barcodeQuiet))) }}" height="4" fill="#0f172a"/>
+            @endforeach
+            <text x="{{ $codeX + $codeW / 2 }}" y="{{ $codeY + 6.6 }}"
+                text-anchor="middle" font-size="3.2" font-weight="bold" fill="#0f172a">{{ $code }}</text>
+        @elseif ($stubCodeType === 'none')
+            <text x="{{ $codeX + $codeW / 2 }}" y="{{ $codeY + 5 }}"
+                text-anchor="middle" font-size="6" font-weight="bold" letter-spacing="1" fill="#0f172a">{{ $code }}</text>
+        @endif
     </g>
 
     {{-- Rodapé --}}

@@ -2,12 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\GenerateCardsRequest;
+use App\Http\Requests\StoreBuyerRequest;
+use App\Jobs\GenerateCardsJob;
+use App\Jobs\GenerateCardsPdfJob;
 use App\Models\Card;
 use App\Models\Game;
 use App\Models\GameEvent;
+use App\Models\PdfExport;
 use App\Services\ArtExportService;
 use App\Services\CardGenerator;
-use App\Services\CardLayoutService;
+use App\Services\CardPrintService;
 use App\Services\PdfService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -50,40 +55,51 @@ class CardController extends Controller
     /**
      * Gera um novo lote de cartelas com códigos únicos e grades
      * válidas, sem duplicar integralmente cartelas já existentes.
+     * Lotes grandes (acima do limite síncrono) vão para a fila: a
+     * verificação de duplicidade tem custo quadrático e travaria a
+     * requisição HTTP com centenas de cartelas.
      */
-    public function generate(Request $request, Game $game)
+    public function generate(GenerateCardsRequest $request, Game $game, CardGenerator $generator)
     {
-        $validated = $request->validate([
-            'quantity' => ['required', 'integer', 'min:1', 'max:500'],
-        ], [
-            'quantity.required' => 'Informe a quantidade de cartelas.',
-            'quantity.max' => 'Gere no máximo 500 cartelas por vez.',
-        ]);
+        $validated = $request->validated();
 
-        $generator = app(CardGenerator::class);
+        $quantity = (int) $validated['quantity'];
         $batch = ((int) $game->cards()->max('batch')) + 1;
 
-        for ($i = 0; $i < $validated['quantity']; $i++) {
-            $generator->createCard($game, batch: $batch);
+        if ($quantity > CardGenerator::INLINE_MAX_GENERATE) {
+            GenerateCardsJob::dispatch($game, $quantity, $batch);
+
+            return back()
+                ->with('success', "Lote {$batch} com {$quantity} cartelas está sendo gerado em segundo plano (fila). Acompanhe o andamento abaixo — as cartelas aparecem na lista assim que ficam prontas.")
+                ->with('generating_batch', $batch)
+                ->with('generating_quantity', $quantity);
         }
 
-        return back()->with('success', $validated['quantity'].' cartela(s) gerada(s) no lote '.$batch.'.');
+        $generator->generateBatch($game, $quantity, $batch);
+
+        return back()->with('success', $quantity.' cartela(s) gerada(s) no lote '.$batch.'.');
+    }
+
+    /**
+     * Progresso de um lote grande gerado pela fila — usado pelo polling
+     * da página de cartelas.
+     */
+    public function generationStatus(Request $request, Game $game)
+    {
+        $batch = (int) $request->query('batch', 0);
+
+        return response()->json([
+            'generated' => $game->cards()->where('batch', $batch)->count(),
+        ]);
     }
 
     /**
      * Cadastro digital do comprador (opcional) — também pode ser
      * preenchido à mão na própria cartela impressa.
      */
-    public function storeBuyer(Request $request, Game $game, Card $card)
+    public function storeBuyer(StoreBuyerRequest $request, Game $game, Card $card)
     {
-        $validated = $request->validate([
-            'buyer_name' => ['nullable', 'string', 'max:150'],
-            'buyer_phone' => ['nullable', 'string', 'max:40'],
-        ]);
-
-        if ($card->game_id !== $game->id) {
-            return back()->with('error', 'Cartela não pertence a esta partida.');
-        }
+        $validated = $request->validated();
 
         if ($card->status === Card::STATUS_CANCELLED || $card->status === Card::STATUS_WINNER) {
             return back()->with('error', 'Não é possível alterar o comprador desta cartela.');
@@ -105,15 +121,25 @@ class CardController extends Controller
             'data' => ['card_code' => $card->code, 'buyer_name' => $card->buyer_name, 'buyer_phone' => $card->buyer_phone],
         ]);
 
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => 'Comprador da cartela '.$card->code.' atualizado.',
+                'type' => 'success',
+                'card' => [
+                    'code' => $card->code,
+                    'status' => $card->statusLabel(),
+                    'sold' => ($status === Card::STATUS_SOLD),
+                    'buyer_name' => $card->buyer_name,
+                    'buyer_phone' => $card->buyer_phone,
+                ],
+            ]);
+        }
+
         return back()->with('success', 'Comprador da cartela '.$card->code.' atualizado.');
     }
 
     public function cancel(Request $request, Game $game, Card $card)
     {
-        if ($card->game_id !== $game->id) {
-            return back()->with('error', 'Cartela não pertence a esta partida.');
-        }
-
         if ($card->status === Card::STATUS_WINNER) {
             return back()->with('error', 'Não é possível cancelar uma cartela vencedora.');
         }
@@ -140,28 +166,49 @@ class CardController extends Controller
      */
     public function print(Request $request, Game $game)
     {
-        $cards = $this->cardsForPrint($request, $game);
+        $prints = app(CardPrintService::class);
+        $cards = $prints->cardsForFilters($game, $request->query());
 
         if ($cards->isEmpty()) {
             return redirect()->route('games.cards.index', $game)->with('error', 'Gere cartelas antes de imprimir.');
         }
 
-        $this->issueCards($game, $cards);
+        $prints->issue($game, $cards);
 
-        return view('cards.print', $this->printData($request, $game, $cards));
+        return view('cards.print', $prints->data($game, $request->query(), $cards));
     }
 
+    /**
+     * PDF A4: lotes grandes (acima do limite síncrono) são gerados pela
+     * fila — centenas de páginas dompdf não cabem num request HTTP.
+     */
     public function pdf(Request $request, Game $game, PdfService $pdf)
     {
-        $cards = $this->cardsForPrint($request, $game);
+        $prints = app(CardPrintService::class);
+        $cards = $prints->cardsForFilters($game, $request->query());
 
         if ($cards->isEmpty()) {
             return redirect()->route('games.cards.index', $game)->with('error', 'Gere cartelas antes de gerar o PDF.');
         }
 
-        $this->issueCards($game, $cards);
+        if ($cards->count() > CardPrintService::INLINE_MAX_CARDS) {
+            $export = $game->pdfExports()->create([
+                'status' => PdfExport::STATUS_PENDING,
+                'cards_count' => $cards->count(),
+                'filters' => $request->query(),
+                'base_url' => $request->root(),
+            ]);
 
-        return $pdf->render('cards.pdf', $this->printData($request, $game, $cards), "cartelas-{$game->id}.pdf");
+            GenerateCardsPdfJob::dispatch($export);
+
+            return redirect()
+                ->route('games.cards.index', $game)
+                ->with('success', "PDF de {$cards->count()} cartelas está sendo gerado em segundo plano. Acompanhe em “Exportações de PDF” — o download (ZIP com os PDFs) aparece quando o arquivo estiver pronto.");
+        }
+
+        $prints->issue($game, $cards);
+
+        return $pdf->render('cards.pdf', $prints->data($game, $request->query(), $cards), "cartelas-{$game->id}.pdf");
     }
 
     /**
@@ -183,90 +230,43 @@ class CardController extends Controller
         return $art->svgModelBase($game);
     }
 
-    private function cardsForPrint(Request $request, Game $game)
+    /**
+     * Consulta o status de uma cartela a partir do seu código.
+     * Aceita o código puro (C-0001), o conteúdo do código de barras
+     * impresso no canhoto ou a URL completa do QR Code.
+     */
+    public function check(Request $request, Game $game)
     {
-        $query = $game->cards()->orderBy('id');
+        $validated = $request->validate(['code' => ['required', 'string', 'max:255']]);
+        $card = $game->cards()->where('code', Card::normalizeCodeInput($validated['code']))->first();
 
-        if ($request->filled('batch')) {
-            $query->where('batch', (int) $request->query('batch'));
+        if (! $card) {
+            return response()->json(['message' => 'Cartela não encontrada nesta partida.', 'type' => 'error'], 404);
         }
 
-        if ($code = $request->query('card')) {
-            $query->where('code', trim($code));
-        }
+        $sold = (bool) ($card->buyer_name || $card->buyer_phone);
 
-        return $query->get();
-    }
-
-    private function printData(Request $request, Game $game, $cards): array
-    {
-        $blocksCount = $cards->first()?->effectiveBlocks()->count() ?? 1;
-        $layout = app(CardLayoutService::class)->layout($game, $blocksCount);
-
-        // Modelo de arte personalizada aplicado à geração (padrão do
-        // evento quando nenhum for informado). A arte nunca altera os
-        // dados do jogo — apenas a aparência visual.
-        $template = null;
-        if ($request->query('template') === 'none') {
-            $template = null;
-        } elseif ($request->filled('template')) {
-            $template = $game->cardTemplates()->find((int) $request->query('template'));
-        } elseif (! $request->exists('template')) {
-            $template = $game->cardTemplates()->where('is_default', true)->first();
-        }
-
-        $templateWarnings = [];
-        if ($template) {
-            $templateWarnings = $template->missingAreas($blocksCount);
-        }
-
-        // Blocos divididos em mais de uma folha quando não couberem
-        // de forma legível e o organizador autorizar a divisão.
-        $splitBlocks = $request->boolean('split_blocks') && $layout['warning'];
-
-        $parts = [];
-        foreach ($cards as $card) {
-            $cardBlocks = $card->effectiveBlocks();
-            $chunks = $splitBlocks || $cardBlocks->count() > $layout['blocks_per_sheet']
-                ? $cardBlocks->chunk($layout['blocks_per_sheet'])
-                : [$cardBlocks];
-
-            foreach ($chunks as $chunk) {
-                $parts[] = ['card' => $card, 'blocks' => $chunk->values()];
-            }
-        }
-
-        return [
-            'game' => $game,
-            'cards' => $cards,
-            'parts' => $parts,
-            'layout' => $layout,
-            'blocksCount' => $blocksCount,
-            'template' => $template,
-            'templateWarnings' => $templateWarnings,
-            'perPage' => $blocksCount > 1
-                ? 1
-                : (in_array((int) $request->query('per_page'), [1, 2, 4]) ? (int) $request->query('per_page') : 2),
-            'stub' => $request->boolean('stub', true),
-            'showPrizes' => $request->boolean('prizes', true),
-            'showPrice' => $request->boolean('price', true),
-            'showBuyer' => $request->boolean('buyer', true),
-            'showDate' => $request->boolean('date', true),
-        ];
+        return response()->json([
+            'card' => [
+                'id' => $card->id,
+                'code' => $card->code,
+                'status' => $card->statusLabel(),
+                'sold' => $sold,
+                'buyer_name' => $card->buyer_name,
+                'buyer_phone' => $card->buyer_phone,
+                'status_color' => $sold ? 'emerald' : ($card->status === Card::STATUS_IN_PLAY ? 'amber' : 'red'),
+            ],
+        ]);
     }
 
     /**
-     * Primeira emissão: registra a data e congela os prêmios exibidos.
+     * Página de conferência de cartelas: recebe a leitura do código de
+     * barras do canhoto (ou o código digitado) e registra vendas rápidas
+     * no caixa — separada da tela do sorteio para não interromper o
+     * registro das pedras.
      */
-    private function issueCards(Game $game, $cards): void
+    public function checkPage(Game $game)
     {
-        foreach ($cards as $card) {
-            if ($card->printed_at === null) {
-                $card->forceFill([
-                    'printed_at' => now(),
-                    'prize_snapshot' => $card->prizesForPrint(),
-                ])->save();
-            }
-        }
+        return view('games.check', ['game' => $game]);
     }
 }

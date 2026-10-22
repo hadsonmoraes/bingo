@@ -71,6 +71,34 @@ class PrizeDisputeTest extends TestCase
             ->assertJsonPath('message', '"Principal" é o último prêmio da disputa.');
     }
 
+    /**
+     * Quando o ponteiro manual aponta um trecho já todo ganho, o estado
+     * exibido no telão recua ao primeiro prêmio em disputa e o "próximo"
+     * segue a mesma sequência usada pelo botão "Avançar prêmio".
+     */
+    public function test_state_next_prize_follows_dispute_when_pointer_segment_is_won(): void
+    {
+        $card = app(CardGenerator::class)->createCard($this->game);
+        $main = $this->game->prizes()->where('name', 'Principal')->first();
+
+        // Principal já tem ganhador; ponteiro avançou até ele
+        $this->game->winners()->create([
+            'prize_id' => $main->id,
+            'card_id' => $card->id,
+            'winner_name' => 'Fulano',
+            'validated_at' => now(),
+        ]);
+        $this->game->update(['current_prize_id' => $main->id]);
+
+        $all = $this->state->all($this->game->refresh());
+
+        // Recua para o primeiro prêmio ainda em disputa
+        $this->assertSame('Pequeno', $all['current_prize']['name']);
+        // Próximo da disputa — o mesmo que "Avançar prêmio" usaria
+        $this->assertSame('Médio', $all['next_prize']['name']);
+        $this->assertSame('Médio', $this->state->nextPrize($this->game)->name);
+    }
+
     public function test_validating_current_prize_moves_dispute_to_next_one(): void
     {
         $small = $this->game->prizes()->where('name', 'Pequeno')->first();

@@ -18,11 +18,19 @@ class Game extends Model
 
     public const LETTERS = ['B', 'I', 'N', 'G', 'O'];
 
+    /** Código impresso no canhoto destacável das cartelas. */
+    public const STUB_CODE_TYPES = [
+        'barcode' => 'Código de barras',
+        'qrcode' => 'QR Code',
+        'none' => 'Somente o número da cartela',
+    ];
+
     protected $fillable = [
         'name',
         'number_min',
         'number_max',
         'use_letters',
+        'letters_word',
         'card_format',
         'status',
         'started_at',
@@ -32,6 +40,7 @@ class Game extends Model
         'event_date',
         'card_price',
         'theme_color',
+        'stub_code_type',
         'na_boa_threshold',
         'current_prize_id',
     ];
@@ -99,21 +108,58 @@ class Game extends Model
         return $this->hasMany(CardTemplate::class)->latest('updated_at');
     }
 
+    public function pdfExports(): HasMany
+    {
+        return $this->hasMany(PdfExport::class)->latest('id');
+    }
+
     public function totalNumbers(): int
     {
         return $this->number_max - $this->number_min + 1;
     }
 
-    public function letterFor(int $number): ?string
+    /**
+     * Tipo de código impresso no canhoto, normalizado (padrão: barcode).
+     */
+    public function stubCodeType(): string
+    {
+        return array_key_exists($this->stub_code_type, self::STUB_CODE_TYPES)
+            ? $this->stub_code_type
+            : 'barcode';
+    }
+
+    /**
+     * Palavra exibida no lugar de "BINGO" (painel de números e
+     * cabeçalho das grades das cartelas). Padrão: BINGO.
+     */
+    public function lettersWord(): string
+    {
+        return mb_strtoupper($this->letters_word ?: implode('', self::LETTERS));
+    }
+
+    /**
+     * Letras do cabeçalho das grades — uma por faixa de números.
+     */
+    public function letters(): array
     {
         if (! $this->use_letters) {
+            return [];
+        }
+
+        return mb_str_split($this->lettersWord());
+    }
+
+    public function letterFor(int $number): ?string
+    {
+        $letters = $this->letters();
+        if ($letters === []) {
             return null;
         }
 
-        $perLetter = max(1, intdiv($this->totalNumbers(), count(self::LETTERS)));
-        $index = min(count(self::LETTERS) - 1, intdiv(max(0, $number - $this->number_min), $perLetter));
+        $perLetter = max(1, intdiv($this->totalNumbers(), count($letters)));
+        $index = min(count($letters) - 1, intdiv(max(0, $number - $this->number_min), $perLetter));
 
-        return self::LETTERS[$index];
+        return $letters[$index];
     }
 
     public function isPlaying(): bool
